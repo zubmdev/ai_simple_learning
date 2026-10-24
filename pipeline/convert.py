@@ -83,6 +83,8 @@ _IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 _HTML_RE = re.compile(r"<(/?)([a-zA-Z][a-zA-Z0-9-]*)")
 _LIST_RE = re.compile(r"^(\-|\*|\+|\d+\.) ")
 _CODE_SPAN_RE = re.compile(r"`[^`]*`")
+_HR_MASK = "\x00hr\x00"
+_PART_MARKER_RESERVE = 24
 
 
 def _resolve(md_path, url):
@@ -203,14 +205,28 @@ def _hard_split(part, budget):
     return out
 
 
+def _mask_fence_hrs(text):
+    out = []
+    in_fence = False
+    for line in text.split("\n"):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+        elif in_fence and line == "---":
+            out.append(_HR_MASK)
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
 def split_message(text, max_chars=MAX_CHARS):
     if len(text) <= max_chars:
         return [text]
-    budget = max_chars - 24
-    segments = re.split(r"\n---\n", text)
+    budget = max_chars - _PART_MARKER_RESERVE
+    segments = re.split(r"\n---\n", _mask_fence_hrs(text))
     parts = []
     buf = ""
     for seg in segments:
+        seg = seg.replace(_HR_MASK, "---")
         candidate = seg if not buf else f"{buf}\n---\n{seg}"
         if len(candidate) <= budget or not buf:
             buf = candidate
@@ -278,10 +294,8 @@ def warnings(text, max_chars=MAX_CHARS):
         issues.append(
             f"текст {len(text)} символов — превышает лимит {MAX_CHARS}, нужен сплит"
         )
-    for match in re.finditer(r"\]\((\.{1,2}/[^)]*)\)", text):
-        issues.append(f"осталась относительная ссылка: {match.group(1)}")
-        break
     in_fence = False
+    link_warned = False
     for line in text.split("\n"):
         stripped = line.strip()
         if stripped.startswith("```"):
@@ -289,7 +303,19 @@ def warnings(text, max_chars=MAX_CHARS):
             continue
         if in_fence:
             continue
-        for match in _HTML_RE.finditer(line):
+        spans = []
+
+        def stash(match):
+            spans.append(match.group(0))
+            return f"\x00{len(spans) - 1}\x00"
+
+        masked = _CODE_SPAN_RE.sub(stash, line)
+        if not link_warned:
+            for match in re.finditer(r"\]\((\.{1,2}/[^)]*)\)", masked):
+                issues.append(f"осталась относительная ссылка: {match.group(1)}")
+                link_warned = True
+                break
+        for match in _HTML_RE.finditer(masked):
             name = match.group(2).lower()
             if name not in SUPPORTED_HTML:
                 issues.append(f"неподдерживаемый HTML-тег <{name}>")

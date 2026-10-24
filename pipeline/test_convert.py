@@ -1,3 +1,4 @@
+import re
 import unittest
 
 from pipeline.convert import convert, split_message, stats, warnings
@@ -158,6 +159,22 @@ class Splitting(unittest.TestCase):
         self.assertTrue(all(p.count("```") % 2 == 0 for p in parts))
         self.assertTrue(all(len(p) <= 1000 for p in parts))
 
+    def test_hr_inside_fence_not_split_point(self):
+        fence = "```python\nintro\n\n---\n\nx = 1\n```"
+        text = "а" * 600 + "\n\n" + fence + "\n\n" + "б" * 600
+        parts = split_message(text, 1000)
+        self.assertGreater(len(parts), 1)
+        self.assertTrue(all(p.count("```") % 2 == 0 for p in parts))
+        self.assertTrue(all(len(p) <= 1000 for p in parts))
+
+    def test_hr_split_round_trip(self):
+        text = "а" * 600 + "\n\n---\n\n" + "б" * 600
+        parts = split_message(text, 1000)
+        restored = "\n---\n".join(
+            re.sub(r"\n\n\*\(часть \d+/\d+\)\*$", "", p) for p in parts
+        )
+        self.assertEqual(restored, text)
+
 
 class Stats(unittest.TestCase):
     def test_counts_media_chars_blocks(self):
@@ -190,6 +207,18 @@ class Warnings(unittest.TestCase):
         issues = warnings("[х](./y.png)", 100)
         self.assertEqual(len(issues), 1)
 
+    def test_relative_link_inside_fence_not_flagged(self):
+        issues = warnings("текст\n\n```markdown\n[клик](./x.md)\n```\n", 100)
+        self.assertEqual(issues, [])
+
+    def test_relative_link_inside_inline_code_not_flagged(self):
+        issues = warnings("Пример: `[клик](./x.md)` в тексте", 100)
+        self.assertEqual(issues, [])
+
+    def test_html_inside_inline_code_not_flagged(self):
+        issues = warnings("Шаблон: `<div>`", 100)
+        self.assertEqual(issues, [])
+
     def test_clean_text_no_issues(self):
         self.assertEqual(warnings("# ОК\n\nтекст", 100), [])
 
@@ -201,8 +230,6 @@ class Warnings(unittest.TestCase):
 
 class ConvertIntegration(unittest.TestCase):
     def test_converted_text_has_no_relative_links(self):
-        import re
-
         src = "# День\n\n![а](./images/a.png)\n\n[дальше](./Day_2.md)\n"
         out = convert(src, "ru/beginner/Week_1/Day_1.md", RAW, BLOB)
         self.assertFalse(re.search(r"\]\(\.{1,2}/", out))
