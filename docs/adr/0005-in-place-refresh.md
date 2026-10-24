@@ -21,4 +21,4 @@ The repo has no commits, so the current state is not recoverable. A baseline com
 
 - `main` baseline: `ru/`, `en/`, `README.md`, `.gitignore` only.
 - The `2026-refresh` branch additionally commits: `docs/`, `AGENTS.md`, `CONTEXT.md`, `opencode.json`, `.agents/`, `skills-lock.json`.
-- The README was rewritten on 2026-10-24 before any public publish; the old `$5`/Boosty text survives only in git history, and nothing was ever sold under it.
+- The README was rewritten on 2026-10-24 before the baseline commit; the repository history starts with the open-content README, and nothing was ever sold under the old `$5`/Boosty offer.

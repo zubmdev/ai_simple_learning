@@ -11,8 +11,7 @@
 | День | Тема | Время | Статус |
 |------|------|-------|--------|
 | [День 1](./Week_8/Day_1.md) | Project Ideation & Scope Definition | 30 мин | ⬜ |
-| [День 2](./Week_8/Day_2.md) | Independent Project Development (Part 1) | 50 мин | ⬜ |
-| [День 3](./Week_8/Day_3.md) | Independent Project Development (Part 2) | 50 мин | ⬜ |
+| [День 2-3](./Week_8/Day_2.md) | Independent Project Development (Parts 1-2) | 100 мин | ⬜ |
 | [День 4](./Week_8/Day_4.md) | Open Source Contribution Workflow | 40 мин | ⬜ |
 | [День 5](./Week_8/Day_5.md) | Graduation & Portfolio Building | 45 мин | ⬜ |
 

@@ -43,17 +43,17 @@ Production-ready [description]
 - **Tech:** Node.js, TypeScript, PostgreSQL
 - **Features:** [key features]
 - **Impact:** [metrics/results]
-- [Live Demo](link) | [Code](link)
+- Live Demo: <URL> | Code: <URL>
 
 ### [Project 2]
 [Description]
 - **Tech:** [stack]
-- [Code](link)
+- Code: <URL>
 
 ## 🌟 Open Source
 
-- [Project 1](link) - [contribution description]
-- [Project 2](link) - [contribution description]
+- Project 1: <URL> - <contribution description>
+- Project 2: <URL> - <contribution description>
 
 ## 🛠️ Tech Stack
 
@@ -215,8 +215,8 @@ Projects:
 - Open Source Workflow
 
 ## Portfolio
-- [Project 1](link)
-- [Project 2](link)
+- Project 1: <URL>
+- Project 2: <URL>
 
 ## Next Steps
 - [ ] Continuous practice
@@ -315,4 +315,4 @@ Welcome to the future of software development. 🌊🤖✨
 
 ---
 
-📚 [Back to Course Overview →](../../README.md)
+📚 [Back to Course Overview →](../../../README.md)

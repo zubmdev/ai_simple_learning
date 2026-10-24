@@ -182,7 +182,7 @@ https://YOUR_USERNAME.github.io/todo-app/
 
 Простое и красивое веб-приложение для управления задачами.
 
-![Screenshot](screenshot.png)
+_(добавь скриншот приложения)_
 
 ## 🎯 Демо
 
