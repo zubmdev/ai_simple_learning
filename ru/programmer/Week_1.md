@@ -38,7 +38,7 @@ code --install-extension Continue.continue
 
 # 2. Выбери модель
 # Cloud (быстро): Groq API - https://console.groq.com
-# Local (приватно): ollama pull qwen2.5-coder:7b
+# Local (приватно): ollama pull gpt-oss:20b
 
 # 3. Открой Continue (Ctrl+L) и начни кодить
 ```

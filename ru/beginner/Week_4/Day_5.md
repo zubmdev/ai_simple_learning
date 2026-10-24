@@ -65,9 +65,9 @@ Ctrl+L → ⚙️ → Open config.json
 {
   "models": [
     {
-      "title": "Groq Llama 3.1 70B",
+      "title": "Groq GPT-OSS 20B",
       "provider": "groq",
-      "model": "llama-3.1-70b-versatile",
+      "model": "openai/gpt-oss-20b",
       "apiKey": "${GROQ_API_KEY}"
     }
   ],

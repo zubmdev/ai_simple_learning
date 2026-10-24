@@ -74,14 +74,14 @@ chmod +x setup-mcp.sh
 {
   "models": [
     {
-      "title": "Primary (Ollama Llama3)",
+      "title": "Primary (Ollama GPT-OSS)",
       "provider": "ollama",
-      "model": "llama3"
+      "model": "gpt-oss:20b"
     },
     {
       "title": "Fallback (Groq)",
       "provider": "groq",
-      "model": "llama3-70b-8192",
+      "model": "openai/gpt-oss-20b",
       "apiKey": "${GROQ_API_KEY}"
     }
   ],

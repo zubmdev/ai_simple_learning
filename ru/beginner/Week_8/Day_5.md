@@ -127,7 +127,7 @@ Week 8: Финальный проект & Open Source 🌟
 
 **Технологии:**
 - HTML5, CSS3, JavaScript (ES6+)
-- VS Code, Continue.dev
+- VS Code, Cline
 - Git, GitHub
 - Ollama, Groq, Free APIs
 
@@ -170,7 +170,7 @@ _(вставь ссылку на GitHub Pages)_
 ## Технологии
 
 - Frontend: HTML5, CSS3, JavaScript
-- AI: Continue.dev + Ollama/Groq
+- AI: Cline + Ollama/Groq
 - Storage: localStorage
 
 ## Как запустить

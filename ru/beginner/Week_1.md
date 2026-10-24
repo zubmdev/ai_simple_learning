@@ -11,7 +11,7 @@
 | День | Тема | Время | Статус |
 |------|------|-------|--------|
 | [День 1](./Week_1/Day_1.md) | Что такое Vibe Coding? Смена мышления | ~2 часа | ⬜ |
-| [День 2](./Week_1/Day_2.md) | Установка базы (VS Code + Continue.dev) | ~2 часа | ⬜ |
+| [День 2](./Week_1/Day_2.md) | Установка базы (VS Code + Cline) | ~2 часа | ⬜ |
 | [День 3](./Week_1/Day_3.md) | Выбор "мозга" под твоё железо | ~2 часа | ⬜ |
 | [День 4](./Week_1/Day_4.md) | Первый диалог с кодом | ~2 часа | ⬜ |
 | [День 5](./Week_1/Day_5.md) | Daily Mission — ASCII Арт | ~2 часа | ⬜ |
@@ -24,7 +24,7 @@
 
 К концу недели ты:
 - ✅ Поймёшь философию Vibe Coding
-- ✅ Установишь VS Code + Continue.dev
+- ✅ Установишь VS Code + Cline
 - ✅ Выберешь и настроишь ИИ-модель
 - ✅ Напишешь первые программы без знания языка
 - ✅ Научишься улучшать код через промпты
@@ -43,7 +43,7 @@
 ## 📚 Дополнительные ресурсы
 
 - [Документация VS Code](https://code.visualstudio.com/docs)
-- [Документация Continue.dev](https://continue.dev/docs)
+- [Документация Cline](https://cline.bot/docs)
 - [Документация Ollama](https://ollama.ai/docs)
 - [Groq Console](https://console.groq.com)
 

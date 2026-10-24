@@ -12,8 +12,10 @@ The beginner course uses **VS Code + Cline + Ollama or a free API**. The program
 - **Beginner agent:** Cline.
 - **Programmer agent:** OpenCode (P1).
 - **Local runtime:** Ollama.
-- **Local models:** Qwen3 8B, Qwen2.5-Coder 7B/14B, gpt-oss:20b, Qwen3.6-35B-A3B, Gemma 4 12B. Pin tags; do not use `latest`.
-- **Free APIs:** Groq, Gemini AI Studio, OpenRouter. HuggingFace free inference is no longer viable for this course.
+- **Tier 2 local models (4GB GPU):** `qwen3.5:2b` (primary), `qwen3:4b` (fallback).
+- **Tier 3 local models (16GB GPU):** `gpt-oss:20b` (flagship), `gemma4:12b` (long context), `qwen3:14b` (dense middle); `qwen3-coder:30b` only with CPU offload. `qwen3.6:35b` (23-24 GB) does not fit this tier; mention only as "more than 16GB".
+- **Free APIs:** Groq (default `openai/gpt-oss-20b`; free tier ~30 RPM / 1,000 RPD / 8K TPM / 200K TPD), Gemini AI Studio, OpenRouter (free models: 20 req/min, 50 req/day below 10 credits, 1,000 req/day above; disable training on free models in privacy settings). All `llama-*` Groq IDs are Enterprise-only or retired and must not be taught.
+- Model IDs verified 2026-10-24 against ollama.com, console.groq.com, and openrouter.ai (research: `docs/research/2026-10-24-models-and-telegram-publishing.md`); Gemini ID still needs a human check at ai.google.dev. Pin tags; do not use `latest`. Re-verify quarterly.
 - **Rules and context:** `AGENTS.md`, project instructions, skills, memory, and explicit file context; not `.continue/config.json`.
 
 ## Why

@@ -174,7 +174,7 @@ code ~/.continue/config.json
     {
       "title": "Local Model",
       "provider": "ollama",
-      "model": "llama3"
+      "model": "qwen3.5:2b"
     }
   ],
   "mcpServers": {
@@ -196,9 +196,9 @@ code ~/.continue/config.json
 {
   "models": [
     {
-      "title": "Groq Llama",
+      "title": "Groq GPT-OSS",
       "provider": "groq",
-      "model": "llama3-70b-8192",
+      "model": "openai/gpt-oss-20b",
       "apiKey": "твой-groq-api-key"
     }
   ],
@@ -219,7 +219,7 @@ code ~/.continue/config.json
     {
       "title": "Ollama Qwen",
       "provider": "ollama",
-      "model": "qwen2:1.5b"
+      "model": "qwen3.5:2b"
     }
   ],
   "mcpServers": {
@@ -237,9 +237,9 @@ code ~/.continue/config.json
 {
   "models": [
     {
-      "title": "Ollama Llama3",
+      "title": "Ollama GPT-OSS",
       "provider": "ollama",
-      "model": "llama3"
+      "model": "gpt-oss:20b"
     }
   ],
   "mcpServers": {

@@ -36,9 +36,9 @@ npm install && npm run build
 {
   "models": [
     {
-      "title": "Local Llama3",
+      "title": "Local GPT-OSS",
       "provider": "ollama",
-      "model": "llama3"
+      "model": "gpt-oss:20b"
     }
   ],
   "mcpServers": {
@@ -178,9 +178,9 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | node ~/mcp-s
 ```json
 {
   "models": [{
-    "title": "Ollama Qwen2",
+    "title": "Ollama Gemma4",
     "provider": "ollama",
-    "model": "qwen2:7b"
+    "model": "gemma4:12b"
   }],
   "mcpServers": {...}
 }
@@ -193,9 +193,9 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | node ~/mcp-s
 ```json
 {
   "models": [{
-    "title": "Groq Llama3",
+    "title": "Groq GPT-OSS",
     "provider": "groq",
-    "model": "llama3-70b-8192",
+    "model": "openai/gpt-oss-20b",
     "apiKey": "gsk_xxx"
   }],
   "mcpServers": {...}
@@ -211,7 +211,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | node ~/mcp-s
   "models": [{
     "title": "Claude Sonnet",
     "provider": "anthropic",
-    "model": "claude-3-5-sonnet-20241022",
+    "model": "claude-sonnet-4-5",
     "apiKey": "sk-ant-xxx"
   }],
   "mcpServers": {...}
