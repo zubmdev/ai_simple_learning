@@ -1,6 +1,6 @@
 # День 3: Выбор "мозга" под твоё железо 🖥️
 
-Сегодня мы подключим ИИ-модель к Continue.dev. У тебя три пути в зависимости от твоего железа. Выбери свой и следуй инструкциям.
+Сегодня мы подключим ИИ-модель к Cline. У тебя три пути в зависимости от твоего железа. Выбери свой и следуй инструкциям.
 
 ---
 
@@ -95,12 +95,12 @@ nvidia-smi --query-gpu=memory.total --format=csv
 **Почему Groq?**
 - 🆓 Бесплатный tier с щедрыми лимитами
 - ⚡ Очень быстрый (до 500 токенов/сек)
-- 🔧 Поддержка популярных моделей (Llama 3.1, Mixtral)
+- 🔧 Поддержка популярных моделей (Llama, Qwen, GPT-OSS)
 - 🌐 API совместим с OpenAI форматом
+- 🤝 В Cline есть нативный провайдер Groq — ключ вставляется в два клика
 
-**Ограничения бесплатного tier:**
-- ~14,400 запросов в день
-- ~7 миллионов токенов в минуту (очень много!)
+**Ограничения бесплатного tier** *(проверено: октябрь 2026; лимиты периодически меняются — актуальные значения смотри на https://console.groq.com/docs/limits)*:
+- Дневной лимит запросов зависит от модели
 - Требуется интернет
 
 ### Шаг 1: Регистрация на Groq
@@ -136,7 +136,7 @@ nvidia-smi --query-gpu=memory.total --format=csv
 
 ![Groq create API key button(изображение):](./images/grok-key.png)
 
-4. Введи имя ключа: `continue-dev` (или любое другое)
+4. Введи имя ключа: `cline-course` (или любое другое)
 
 5. Нажми **"Submit"** ![Create API Key(изображение):](./images/submit-key.png)
 
@@ -157,86 +157,44 @@ nvidia-smi --query-gpu=memory.total --format=csv
 - Заметки (зашифрованные)
 - Файл `.env` в проекте (добавь в `.gitignore`)
 
-### Шаг 3: Подключение Groq к Continue.dev
+### Шаг 3: Подключение Groq к Cline
 
-#### Способ 1: Через настройки Continue
+Всё делается прямо в интерфейсе Cline — никакие конфиги править не нужно.
 
-1. Открой VS Code
-2. Открой Continue: `Ctrl + L` (или `Cmd + L` на Mac)
-3. Нажми на шестерёнку ⚙️ (Settings) в правом верхнем углу панели Continue
+#### 3.1. Открой настройки Cline
 
-![Continue settings gear icon(изображение):](./images/gear-continue.png)
+1. Открой VS Code и панель Cline (иконка слева в Activity Bar)
+2. Нажми на шестерёнку ⚙️ (Settings)
 
-4. Выбери **"Open config.yaml"**
+![Настройки Cline(изображение)](./images/cline-step1-settings.png)
 
-![Continue open config.yaml(изображение):](./images/config-yaml.png)
+#### 3.2. Выбери провайдера
 
-5. Откроется файл `config.yaml`. Найди раздел `"models"`:
+В выпадающем списке **API Provider** выбери **Groq**
 
-```yaml
-models:
-  - name: llama
-    provider: groq
-    model: llama-3.3-70b-versatile
-    apiKey: ТВОЙ_API_КЛЮЧ_ЗДЕСЬ
-    roles:
-      - chat
-      - edit
-      - autocomplete
+![Выбор провайдера Groq(изображение)](./images/cline-step2-provider.png)
 
-```
-![config.yaml(изображение):](./images/config-yaml1.png)
+#### 3.3. Вставь API ключ
 
-6. Замени `ТВОЙ_API_КЛЮЧ_ЗДЕСЬ` на твой скопированный ключ
+Вставь скопированный ключ в поле **Groq API Key**
 
-7. Сохрани файл: `Ctrl + S`
+![Вставка API ключа(изображение)](./images/cline-step3-api-key.png)
 
-<!-- #### Способ 2: Через переменную окружения (безопаснее)
+#### 3.4. Выбери модель
 
-**Windows (PowerShell):**
+В списке **Model** выбери `llama-3.3-70b-versatile`
 
-```yaml
-models:
-  - name: llama
-    provider: groq
-    model: llama-3.3-70b-versatile
-    apiKey: ${GROQ_API_KEY}
-    roles:
-      - chat
-      - edit
-      - autocomplete
-
-```
-
-```powershell
-# Установи переменную окружения (текущая сессия)
-$env:GROQ_API_KEY = "твой_ключ_здесь"
-
-# Или постоянно (для всех сессий)
-[System.Environment]::SetEnvironmentVariable('GROQ_API_KEY', 'твой_ключ_здесь', 'User')
-```
-
-**macOS/Linux (bash/zsh):**
-
-```bash
-# Добавь в ~/.bashrc или ~/.zshrc
-export GROQ_API_KEY="твой_ключ_здесь"
-
-# Примени изменения
-source ~/.bashrc  # или source ~/.zshrc
-``` -->
-
+![Выбор модели(изображение)](./images/cline-step4-model.png)
 
 ### Шаг 4: Проверка работы
 
-1. Перезапусти VS Code (если использовал переменную окружения)
-2. Открой Continue: `Ctrl + L`![Выбери установленную llama: ](./images/choosing-llama.png)
-3. В поле ввода напиши: `Привет! Напиши "Hello World" на Python`
-4. Нажми Enter или кнопку отправки
+1. Открой панель Cline
+2. В поле ввода напиши: `Привет! Напиши "Hello World" на Python`
+3. Нажми Enter или кнопку отправки
 
 **✅ Если ИИ ответил — всё работает!**
 
-### Рекомендуемые модели Groq
+### Рекомендуемые модели Groq *(проверено: октябрь 2026)*
 
 | Модель | Размер | Скорость | Качество | Для чего |
 |--------|--------|----------|----------|----------|
@@ -279,52 +237,18 @@ source ~/.bashrc  # или source ~/.zshrc
 
 6. Скопируй API ключ
 
-### Шаг 2: Подключение к Continue
+### Шаг 2: Подключение к Cline
 
 #### Используйте VPN!!!
 
-В `config.yaml`:
+1. Открой настройки Cline (⚙️ в панели)
+2. В **API Provider** выбери **Google Gemini**
+3. Вставь ключ в поле **Gemini API Key**
+4. В списке **Model** выбери `gemini-3.1-flash-lite-preview`
 
-```yaml
-models:
-  - name: Gemini 3.1 Flash
-    provider: gemini
-    model: gemini-3.1-flash-lite-preview
-    apiKey: ТВОЙ_GEMINI_API_КЛЮЧ
-    roles:
-      - chat
-      - edit
-      - autocomplete
-
-```
-
-### Рекомендуемые модели Gemini
+### Рекомендуемые модели Gemini *(проверено: октябрь 2026)*
 
 `gemini-3.1-flash-lite-preview`(Text, Image, Video, Audio, and PDF)
-
----
-
-## Вариант 1C: Hugging Face Inference API (Ещё альтернатива)
-
-### Что такое Hugging Face?
-
-**Hugging Face** — это платформа для ML моделей. Бесплатный inference API для многих моделей.
-
-1. Зарегистрируйся: **https://huggingface.co/join**
-2. Получи токен: Settings → Access Tokens → New token
-3. Выбери модель: **https://huggingface.co/models**
-4. В Continue:
-
-```yaml
-models:
-  - name: Qwen
-    provider: huggingface-inference
-    model: Qwen/Qwen2.5-Coder-32B-Instruct
-    apiKey: ТВОЙ_HUGGINGFACE_ТОКЕН
-    roles:
-      - chat
-      - edit
-```
 
 ---
 
@@ -349,7 +273,7 @@ models:
 - ⚙️ Простое управление моделями
 - 🚀 Автоматическое использование GPU
 
-**Модели для 4GB VRAM:**
+**Модели для 4GB VRAM** *(проверено: октябрь 2026)*:
 
 | Модель | Размер | VRAM | Качество | Скорость |
 |--------|--------|------|----------|----------|
@@ -605,33 +529,20 @@ llama3.2:3b             def789ghi012    2.0 GB  1 day ago
 
 ---
 
-## Шаг 4: Подключение Ollama к Continue.dev
+## Шаг 4: Подключение Ollama к Cline
 
-### Способ 1: Автоматическое обнаружение
+Всё делается прямо в интерфейсе Cline — никакие конфиги править не нужно.
 
-1. Открой VS Code
-2. Открой Continue: `Ctrl + L`
-3. Нажми на выпадающий список моделей вверху
-4. Если Ollama запущен, модели появятся автоматически
-5. Выбери модель `qwen2.5-coder:3b`
-
-### Способ 2: Ручная настройка
-
-Открой `config.yaml` в Continue:
-
-```yaml
-models:
-  - name: Qwen 3.5 4B
-    provider: ollama
-    model: qwen3.5:4b
-    roles:
-      - chat
-      - edit
-```
+1. Убедись, что Ollama запущен (иконка в трее / меню-баре)
+2. Открой VS Code и панель Cline
+3. Нажми на шестерёнку ⚙️ (Settings)
+4. В выпадающем списке **API Provider** выбери **Ollama**
+5. В поле **Base URL** оставь `http://localhost:11434` (значение по умолчанию)
+6. В списке **Model** выбери `qwen2.5-coder:3b`
 
 ### Проверка работы
 
-1. Открой Continue: `Ctrl + L`
+1. Открой панель Cline
 2. Напиши: `Привет! Напиши функцию сложения на Python`
 3. Нажми Enter
 
@@ -686,15 +597,15 @@ sudo systemctl enable ollama
 
 ## Выбор модели
 
-Для мощного железа рекомендуются:
+Для мощного железа рекомендуются *(проверено: октябрь 2026)*:
 
 | Модель | Размер | VRAM | Качество | Для чего |
 |--------|--------|------|----------|----------|
 | `llama3.1:8b` | 4.7GB | 8GB+ | ⭐⭐⭐⭐ | Универсальная |
-| `deepseek-coder-v2:latest` | 9GB | 16GB+ | ⭐⭐⭐⭐⭐ | Специально для кода |
+| `deepseek-coder-v2:16b` | 9GB | 16GB+ | ⭐⭐⭐⭐⭐ | Специально для кода |
 | `qwen2.5-coder:7b` | 4.7GB | 8GB+ | ⭐⭐⭐⭐⭐ | Код (рекомендуется) |
 | `codellama:7b` | 3.8GB | 6GB+ | ⭐⭐⭐⭐ | Legacy, но стабильная |
-| `llama3.2:latest` | 4GB | 6GB+ | ⭐⭐⭐⭐ | Новый, быстрый |
+| `llama3.2:3b` | 2GB | 4GB+ | ⭐⭐⭐⭐ | Лёгкая и быстрая |
 
 **Рекомендация:** Начни с `qwen2.5-coder:7b` — лучшее соотношение качество/размер для кодинга.
 
@@ -710,26 +621,25 @@ ollama pull qwen2.5-coder:7b
 ollama pull llama3.1:8b
 
 # Или специализированная DeepSeek (для мощных GPU)
-ollama pull deepseek-coder-v2:latest
+ollama pull deepseek-coder-v2:16b
 ```
 
 **Время скачивания:**
 - `qwen2.5-coder:7b`: 5-10 минут
-- `deepseek-coder-v2:latest`: 10-20 минут
+- `deepseek-coder-v2:16b`: 10-20 минут
 
 ---
 
-## Подключение к Continue
+## Подключение Ollama к Cline
 
-```yaml
-models:
-  - name: Qwen 3.5 9B
-    provider: ollama
-    model: qwen3.5:9b
-    roles:
-      - chat
-      - edit
-```
+Всё делается прямо в интерфейсе Cline — никакие конфиги править не нужно.
+
+1. Убедись, что Ollama запущен (иконка в трее / меню-баре)
+2. Открой VS Code и панель Cline
+3. Нажми на шестерёнку ⚙️ (Settings)
+4. В выпадающем списке **API Provider** выбери **Ollama**
+5. В поле **Base URL** оставь `http://localhost:11434` (значение по умолчанию)
+6. В списке **Model** выбери `qwen2.5-coder:7b`
 
 ---
 
@@ -775,21 +685,21 @@ def slow_function(n):
 - [ ] Зарегистрировался на Groq Console
 - [ ] Создал API ключ
 - [ ] Сохранил ключ в надёжном месте
-- [ ] Подключил к Continue.dev
+- [ ] Подключил к Cline
 - [ ] Проверил работу (ИИ отвечает)
 
 ### Путь 2 (Ollama + Qwen):
 - [ ] Установил Ollama
 - [ ] Проверил работу GPU
 - [ ] Скачал модель `qwen2.5-coder:3b`
-- [ ] Подключил к Continue.dev
+- [ ] Подключил к Cline
 - [ ] Проверил работу (ИИ отвечает)
 
 ### Путь 3 (Ollama + Llama):
 - [ ] Установил Ollama
 - [ ] Проверил работу GPU
 - [ ] Скачал модель `qwen2.5-coder:7b` или `llama3.1:8b`
-- [ ] Подключил к Continue.dev
+- [ ] Подключил к Cline
 - [ ] Проверил работу (ИИ отвечает)
 
 ---
