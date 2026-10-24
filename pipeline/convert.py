@@ -108,6 +108,16 @@ def _rewrite_link(match, md_path, raw_base, blob_base):
     return f"[{label}]({blob_base}/{repo_path}{fragment})"
 
 
+def _mask_code_spans(line):
+    spans = []
+
+    def stash(match):
+        spans.append(match.group(0))
+        return f"\x00{len(spans) - 1}\x00"
+
+    return _CODE_SPAN_RE.sub(stash, line), spans
+
+
 def _rewrite_links(text, md_path, raw_base, blob_base):
     out = []
     in_fence = False
@@ -119,13 +129,7 @@ def _rewrite_links(text, md_path, raw_base, blob_base):
         if in_fence:
             out.append(line)
             continue
-        spans = []
-
-        def stash(match):
-            spans.append(match.group(0))
-            return f"\x00{len(spans) - 1}\x00"
-
-        masked = _CODE_SPAN_RE.sub(stash, line)
+        masked, spans = _mask_code_spans(line)
         rewritten = _LINK_RE.sub(
             lambda m: _rewrite_link(m, md_path, raw_base, blob_base), masked
         )
@@ -303,13 +307,7 @@ def warnings(text, max_chars=MAX_CHARS):
             continue
         if in_fence:
             continue
-        spans = []
-
-        def stash(match):
-            spans.append(match.group(0))
-            return f"\x00{len(spans) - 1}\x00"
-
-        masked = _CODE_SPAN_RE.sub(stash, line)
+        masked, _ = _mask_code_spans(line)
         if not link_warned:
             for match in re.finditer(r"\]\((\.{1,2}/[^)]*)\)", masked):
                 issues.append(f"осталась относительная ссылка: {match.group(1)}")

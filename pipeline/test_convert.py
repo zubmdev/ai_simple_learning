@@ -166,6 +166,7 @@ class Splitting(unittest.TestCase):
         self.assertGreater(len(parts), 1)
         self.assertTrue(all(p.count("```") % 2 == 0 for p in parts))
         self.assertTrue(all(len(p) <= 1000 for p in parts))
+        self.assertTrue(any("intro\n\n---\n\nx = 1" in p for p in parts))
 
     def test_hr_split_round_trip(self):
         text = "а" * 600 + "\n\n---\n\n" + "б" * 600
