@@ -1,6 +1,7 @@
 # Cline-first stack; OpenCode later; retire Continue.dev
 
 **Status:** accepted
+
 **Date:** 2026-10-24
 
 The beginner course uses **VS Code + Cline + Ollama or a free API**. The programmer track adds **OpenCode** as an advanced upgrade in P1, not at launch. **Continue.dev is retired**; it is read-only/final after the Cursor acquisition and must not appear in new lessons.

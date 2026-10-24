@@ -1,7 +1,9 @@
 # Refresh in place on a 2026-refresh branch
 
 **Status:** accepted
+
 **Date:** 2026-10-24
+
 **Amended:** 2026-10-24 — baseline-commit manifest recorded; the README was rewritten before any public publish.
 
 Create an initial git commit of the current repository as the baseline, then do the rewrite on a `2026-refresh` branch and merge back when the refresh is ready. Rewrite lessons in place; do not create a parallel `v2/` course tree.

@@ -24,7 +24,7 @@ Programming through natural language prompts, acting as AI director instead of c
 ✅ **Bilingual** (Russian + English)
 ✅ **Hardware-Agnostic** (CPU / 4GB GPU / 16GB GPU)
 ✅ **~2 hours/day**
-✅ **100% Free Tools** (VS Code, Continue.dev, Ollama)
+✅ **100% Free Tools** (VS Code, Cline, Ollama)
 ✅ **Open Source Philosophy**
 
 ### 8-Week Overview
@@ -44,37 +44,25 @@ From zero to shipping real projects with AI in 8 weeks.
 
 ---
 
-## 💳 Access & Pricing
+## 🆓 Access
 
 ### Free Content
-Day 0 (this post) is **100% FREE** — your introduction to the course.
-
-### Paid Content
-Weeks 1-8 — **$5 per week** (separate posts)
+The entire course is **100% FREE**: all 8 weeks are openly available in this repository.
 
 | What | Cost | Details |
 |------|------|---------|
 | **Day 0** | 💚 FREE | This post |
-| **Week 1** | 💳 $5 | 5 days |
-| **Week 2** | 💳 $5 | 5 days |
-| **Week 3** | 💳 $5 | 5 days |
-| **Week 4** | 💳 $5 | 5 days |
-| **Week 5** | 💳 $5 | 5 days |
-| **Week 6** | 💳 $5 | 5 days |
-| **Week 7** | 💳 $5 | 5 days |
-| **Week 8** | 💳 $5 | 5 days |
+| **Weeks 1-8** | 💚 FREE | All lessons in the repo |
 | **Tools** | 💚 $0 | All free |
 
-**Total Investment:** $40 (course) + $0 (tools) = **$40**
+### Paid Consultations (optional)
+Stuck on *your own* task or project? Book a one-off 60-minute consultation with the course author (60 BYN). The course is fully completable without it.
 
-### How to Access
+### How to Start
 
-1. ✅ Complete **FREE Day 0** (you're here!)
-2. 📅 New week releases every **Sunday**
-3. 💳 Pay $5 per week you want to unlock
-4. 🔄 Pay week-by-week, no commitment
-
-> 💡 **Flexibility:** Pay for one week or all 8 — your choice!
+1. ✅ Complete **Day 0** (you're here!)
+2. 📚 Open [Week 1 (RU)](../../ru/beginner/Week_1.md) — all lessons are open
+3. 📬 Subscribe to the Telegram channel to follow the schedule
 
 ---
 
@@ -85,10 +73,10 @@ All tools in this course are **100% FREE** — no paid licenses required!
 | Tool | Purpose | Cost |
 |------|---------|------|
 | **VS Code** | Code editor | 💚 Free |
-| **Continue.dev** | AI assistant | 💚 Free (Open Source) |
+| **Cline** | AI assistant in VS Code | 💚 Free |
 | **Ollama** | Local AI runner | 💚 Free |
 | **Groq API** | Cloud AI (free tier) | 💚 Free tier |
-| **HuggingFace** | Models | 💚 Free |
+| **Gemini AI Studio** | Cloud AI (free tier) | 💚 Free tier |
 | **Python** | Programming language | 💚 Free |
 | **Git** | Version control | 💚 Free |
 
@@ -154,13 +142,13 @@ VS Code is the editor we'll use throughout the course. Perfect for Markdown!
 
 ### Hardware Paths
 
-- 🌱 **Tier 1 (CPU Only):** Free APIs (Groq, HuggingFace)
-- 💻 **Tier 2 (4GB GPU):** Ollama + Qwen 1.5B/3B
-- 🚀 **Tier 3 (16GB GPU+):** Ollama + Llama 3 8B, DeepSeek
+- 🌱 **Tier 1 (CPU Only):** Free APIs (Groq, Gemini AI Studio, OpenRouter)
+- 💻 **Tier 2 (4GB GPU):** Ollama + lightweight local models
+- 🚀 **Tier 3 (16GB GPU+):** Ollama + advanced local models
 
 ### Release Schedule
 
-New week releases every **Sunday** ($5/week)
+New lessons are posted in the Telegram channel; all content is already open in the repository.
 
 ---
 
@@ -172,7 +160,7 @@ Answer honestly:
 - [ ] 🌐 **Internet:** Stable connection?
 - [ ] ⏱️ **Time:** ~2 hours/day available?
 - [ ] 🔥 **Motivation:** Want to learn AI coding?
-- [ ] 💳 **Budget:** Ready for $5/week?
+- [ ] 💚 **Budget:** Course and tools are free — you only need time
 
 **Result:**
 - ✅✅✅✅✅ **5/5:** You're ready! Start now!
@@ -185,21 +173,20 @@ Answer honestly:
 
 ### If you're stuck
 
-1. **Ask AI in Continue:** "I'm stuck on [step]. Explain simply what to do."
+1. **Ask your AI assistant:** "I'm stuck on [step]. Explain simply what to do."
 
 2. **Official documentation:**
    - VS Code: https://code.visualstudio.com/docs
-   - Continue.dev: https://continue.dev/docs
+   - Cline: https://cline.bot
    - Ollama: https://ollama.ai/docs
 
 3. **Communities:**
-   - Continue Discord: https://discord.gg/continue
    - Ollama Discord: https://discord.gg/ollama
 
 ### If you get an error
 
 1. Copy the error text
-2. Paste in Continue with: "Here's the error: [error]. How to fix?"
+2. Paste into your AI assistant: "Here's the error: [error]. How to fix?"
 3. AI will explain and give a solution
 
 ### If nothing makes sense
@@ -236,7 +223,7 @@ Answer honestly:
 | Day | Topic | Time |
 |-----|-------|------|
 | Day 1 | What is Vibe Coding? | ~2h |
-| Day 2 | Install VS Code + Continue | ~2h |
+| Day 2 | Install VS Code + Cline | ~2h |
 | Day 3 | Choose AI model | ~2h |
 | Day 4 | First code dialog | ~2h |
 | Day 5 | ASCII Art Mission | ~2h |

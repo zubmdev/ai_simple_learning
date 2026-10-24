@@ -1,7 +1,9 @@
 # Dual-brand: Vibe Coding entry, Agentic Engineering paid product
 
 **Status:** accepted
+
 **Date:** 2026-10-24
+
 **Amended:** 2026-10-24 — the paid offering narrowed to 1:1 consultations; the cohort was dropped (ADR-0002).
 
 We keep **Vibe Coding Course** as the public umbrella because it carries existing recognition and search demand, but sell paid services under the **Agentic Engineering** banner (RU subtitle: **AI-инженерия** — 1:1 consultations) because "vibe coding" signals low rigor and is past peak. The free entry remains **Vibe Coding Day 0** and leads to the paid category.

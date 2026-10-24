@@ -5,7 +5,7 @@ A Russian-first, bilingual course that teaches beginners and programmers to dire
 ## Language
 
 **Course**:
-The umbrella product: the entire free 8-week content set, the Telegram subscription feed, and paid 1:1 consultations.
+The umbrella product: the entire free 8-week content set and the Telegram subscription feed. Paid consultations are a separate service, not part of the course.
 _Avoid_: program, training, school.
 
 **Vibe Coding**:

@@ -1,7 +1,9 @@
 # 2026 Refresh Plan: Vibe Coding -> Agentic Engineering
 
 **Status:** Approved v2, confirmed 2026-10-24 (open-content: free course, paid consultations)
+
 **Scope:** RU-first 8-week course, Beginner and Programmer tracks, Creator module, 90-day open-content launch.
+
 **Decisions:** [ADR-0001](./adr/0001-dual-brand.md), [ADR-0002](./adr/0002-open-content-offer.md), [ADR-0003](./adr/0003-cline-first-stack.md), [ADR-0004](./adr/0004-legal-and-payments.md), [ADR-0005](./adr/0005-in-place-refresh.md), [ADR-0006](./adr/0006-creator-module.md).
 
 ## 1. Outcome
@@ -119,7 +121,7 @@ Full decision: [ADR-0004](./adr/0004-legal-and-payments.md).
 
 - [x] Finalize the approved plan, glossary, pedagogy, and ADRs.
 - [x] Publish the rewritten README (open-content offer; no Boosty or $5 table).
-- [ ] Create the baseline commit and `2026-refresh` branch (explicit go required).
+- [x] Create the baseline commit and `2026-refresh` branch.
 - [ ] Launch the Telegram channel: pinned course-index post, bot form (nick, experience, current task).
 - [ ] Start the manual Threads feed (≤500 characters, dedicated attributed t.me invite first, ≤20% of marketing time; kill after 4 weeks with zero inbound).
 - [ ] Open 2-3 consultation slots (60 BYN) and run the first sessions.
@@ -222,10 +224,10 @@ Use one weekly review: what shipped, what blocked, what metric moved. Keep a dec
 
 - [x] Approve the plan and the ADRs; write plan/ADRs/pedagogy/glossary.
 - [x] Rewrite the README (open-content offer; no Boosty or $5 table).
-- [ ] Create the baseline commit and `2026-refresh` branch (explicit go required).
+- [x] Create the baseline commit and `2026-refresh` branch.
 - [ ] Launch the Telegram channel: pinned post + bot form.
 - [ ] Start the Threads feed; open 2-3 consultation slots (60 BYN) and run the first sessions.
-- [ ] Fix the P0 links and the missing Day 3.
+- [x] Fix the P0 links and the missing Day 3.
 - [ ] Rewrite Week 1 setup with Cline; test with 3 beginners.
 
 ## 12. Open implementation choices

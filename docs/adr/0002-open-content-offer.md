@@ -1,7 +1,9 @@
 # Open-content offer: free course, paid consultations
 
 **Status:** accepted
+
 **Date:** 2026-10-24
+
 **Amended:** 2026-10-24 — renamed from open-core; same day: paid beta, seats, certificate, and the 299 BYN library SKU dropped; the paid offering is reduced to 1:1 consultations.
 
 Replace the README's "100% free" / `$5` per-week model with an open-content offer:

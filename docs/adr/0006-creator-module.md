@@ -1,6 +1,7 @@
 # Creator module, not a third track
 
 **Status:** accepted
+
 **Date:** 2026-10-24
 
 Add a **Creator module** inside the Beginner track plus a standalone free lead magnet. Do not launch a third 8-week track until demand is validated.
