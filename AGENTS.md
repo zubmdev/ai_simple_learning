@@ -2,7 +2,7 @@
 
 ## Repo at a glance
 
-- Static Markdown course (RU/EN), 8 weeks. No package.json, build, lint, tests, or CI; don't invent scripts.
+- Static Markdown course (RU/EN), 8 weeks. Content is pure Markdown; the only code is `pipeline/` (Telegram publish: `convert.py` md→rich-md, `publisher.py` Bot API client; stdlib-only, `python3 -m unittest discover -s pipeline`), which the "no build/tests" rule below doesn't apply to.
 - RU is the only complete track: `ru/beginner` and `ru/programmer`, each with `Week_N.md` (index), `Week_N/Day_M.md` (lessons), and optional `Week_N/images/`.
 - EN is an unfinished mirror: only `en/beginner/Day_0.md` and `en/beginner/Glossary.md` exist. There are no EN week lessons.
 - `ru/beginner/Day_0.md` is the free intro; programmer tracks have no Day 0.
@@ -44,7 +44,7 @@
 - Large parts of `opencode.json` are inherited from an unrelated genealogy project (`build`/`crawl`/`ocr` agents, geno-dbase.ru, `downloads/**` watcher ignores). Don't infer this repo's structure from it.
 - `skills-lock.json` and `.agents/skills/` are vendored third-party skills (mattpocock/skills), not course content; don't rewrite them.
 - `.env` is gitignored and only defines `GROQ_API_KEY`; never put real keys in lessons.
-- Known broken links: `ru/*/Week_8/Day_3.md` is missing in both tracks; `ru/beginner/Week_1/Day_1.md` links `./Day_0.md` (should be `../Day_0.md`); both `Week_8/Day_5.md` link `../../README.md` (should be `../../../README.md`).
+- Known broken links: `ru/*/Week_8/Day_3.md` is missing in both tracks (footer links skip it).
 
 ## Verification
 
