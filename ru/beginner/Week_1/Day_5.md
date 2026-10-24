@@ -34,7 +34,7 @@
 
 ### Шаг 3: Напиши промпт
 
-Открой Continue (`Ctrl + L`) и напиши:
+Открой панель Cline (иконка слева в Activity Bar) и напиши:
 
 ```
 Напиши скрипт на Python, который:
@@ -141,7 +141,7 @@ python ascii_art.py
 
 ### Шаг 1: Попроси улучшение
 
-В том же чате Continue напиши:
+В том же чате Cline напиши:
 
 ```
 Отлично! Добавь возможность выбора стиля ASCII-арта:
@@ -526,7 +526,7 @@ if __name__ == "__main__":
 ### Что ты узнал:
 
 - ✅ Философию Vibe Coding (режиссёр, а не тайпер)
-- ✅ Установил VS Code + Continue.dev
+- ✅ Установил VS Code + Cline
 - ✅ Выбрал и настроил ИИ-модель
 - ✅ Написал первые программы без знания языка
 - ✅ Научился улучшать код через промпты
@@ -565,7 +565,7 @@ if __name__ == "__main__":
 ### Документация
 
 - **VS Code:** https://code.visualstudio.com/docs
-- **Continue.dev:** https://continue.dev/docs
+- **Cline:** https://docs.cline.bot
 - **Ollama:** https://ollama.ai/docs
 - **Groq:** https://console.groq.com/docs
 - **Python art library:** https://github.com/sepandhaghighi/art
@@ -579,7 +579,7 @@ if __name__ == "__main__":
 
 ### Сообщество
 
-- **Continue Discord:** https://discord.gg/continue
+- **Cline Discord:** https://discord.gg/cline
 - **Ollama Discord:** https://discord.gg/ollama
 
 ---
