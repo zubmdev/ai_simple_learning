@@ -1,0 +1,310 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "modal": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Modal",
+      "options": {
+        "baseURL": "https://api.us-west-2.modal.direct/v1",
+        "apiKey": "{env:MODAL_API_KEY}"
+      },
+      "models": {
+        "zai-org/GLM-5.1-FP8": {
+          "name": "GLM-5.1"
+        }
+      }
+    },
+    "z-ai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Z.AI Coding Plan",
+      "options": {
+        "baseURL": "https://api.z.ai/api/coding/paas/v4",
+        "apiKey": "{env:ZAI_CODING_API_KEY}",
+        "timeout": 600000,
+        "setCacheKey": true
+      },
+      "models": {
+        "glm-5.3": {
+          "name": "GLM-5.3",
+          "options": { "reasoningEffort": "low" },
+          "variants": {
+            "high": { "reasoningEffort": "high" },
+            "max": { "reasoningEffort": "max" }
+          }
+        },
+        "glm-5.3-flash": {
+          "name": "GLM-5.3-FLASH",
+          "options": { 
+            "reasoning_effort": "max",
+            "temperature": 1,
+            "top_p": 0.95
+          }
+        }
+      }
+    },
+    "openrouter": {
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "minimax/minimax-m3:free": {
+          "name": "MiniMax M3 (Free)",
+          "limit": {
+            "context": 128000,
+            "output": 4096
+          }
+        }
+      }
+    }
+  },
+  "model": "z-ai/glm-5.3",
+  "default_agent": "build",
+  "compaction": { "auto": false, "prune": true, "reserved": 40000 },
+  "plugin": ["opencode-dynamic-context-pruning"],
+  "permission": {
+    "edit": "ask",
+    "bash": "ask",
+    "glob": "allow",
+    "grep": "allow",
+    "read": "allow",
+    "list": "allow",
+    "task": "ask",
+    "skill": "allow",
+    "webfetch": "ask",
+    "question": "allow"
+  },
+  "mcp": {
+    "echovault": {
+      "type": "local",
+      "command": ["memory", "mcp"],
+      "timeout": 5000,
+      "enabled": true
+    },
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": { "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}" },
+      "timeout": 15000,
+      "enabled": true
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "timeout": 15000,
+      "enabled": true
+    },
+    "gh_grep": {
+      "type": "remote",
+      "url": "https://mcp.grep.app",
+      "timeout": 8000,
+      "enabled": true
+    },
+    "scrapling": {
+      "type": "local",
+      "command": ["scrapling", "mcp"],
+      "timeout": 30000,
+      "enabled": true
+    },
+    "pharos": {
+      "type": "local",
+      "command": ["bash", "-c", "cd '/home/maximoto/Общедоступные/rust/car_data_intelligence' && exec pharos"],
+      "timeout": 30000,
+      "enabled": true
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@1.9.0", "--isolated", "--headless", "--no-usage-statistics"],
+      "timeout": 30000,
+      "enabled": true
+    }
+  },
+  "tools": {
+    "echovault_*": false,
+    "context7_*": false,
+    "sequential-thinking_*": false,
+    "gh_grep_*": false,
+    "pharos_*": false,
+    "scrapling_*": false,
+    "chrome-devtools_*": false
+  },
+  "agent": {
+    "build": {
+      "description": "Default Rust development agent. Cargo-aware, strict bash allowlist, MCPs off (lazy via subagents).",
+      "tools": {
+        "echovault_*": true,
+        "context7_*": true,
+        "pharos_*": true,
+        "chrome-devtools_*": true
+      },
+      "permission": {
+        "bash": {
+          "cargo build*": "allow",
+          "cargo check*": "allow",
+          "cargo clippy*": "allow",
+          "cargo test*": "allow",
+          "cargo fmt*": "allow",
+          "cargo metadata": "allow",
+          "cargo doc": "ask",
+          "cargo run*": "ask",
+          "cargo fix*": "ask",
+          "cargo publish": "deny",
+          "cargo bench*": "deny",
+          "rm *": "deny",
+          "rm -rf *": "deny",
+          "git push*": "ask",
+          "git commit*": "ask",
+          "git checkout *": "ask",
+          "git reset *": "ask",
+          "git rebase*": "ask",
+          "rg *": "allow",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git add *": "allow",
+          "git stash*": "allow",
+          "git branch*": "ask",
+          "rustc *": "ask",
+          "rustup *": "ask",
+          "curl http://localhost:8123/*": "allow",
+          "*": "ask"
+        }
+      },
+      "steps": 20
+    },
+    "plan": {
+      "description": "Read-only planning with Rust context. Uses sequential-thinking for multi-step refactors.",
+      "tools": { "echovault_*": true, "sequential-thinking_*": true, "context7_*": true, "pharos_*": true },
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "adversary": {
+      "description": "Hostile reviewer for plan-agent output. Verifies claims against memory, docs, and code, then returns a verdict plus a corrected plan. Read-only.",
+      "mode": "primary",
+      "steps": 30,
+      "permission": {
+        "edit": "deny",
+        "bash": "deny",
+        "webfetch": "deny",
+        "skill": "allow",
+        "task": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "question": "allow",
+        "echovault_*": "allow",
+        "sequential-thinking_*": "allow",
+        "context7_*": "allow",
+        "gh_grep_*": "allow",
+        "pharos_*": "allow",
+        "scrapling_*": "ask"
+      }
+    },
+    "doc-curator": {
+      "description": "Subagent for researching current crate APIs before code is written. Uses context7 + gh_grep, no edits.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "context7_*": true, "gh_grep_*": true },
+      "permission": { "edit": "deny", "bash": "deny", "webfetch": "allow" }
+    },
+    "pipeline-architect": {
+      "description": "Subagent for async mpsc/scheduler refactors. Uses sequential-thinking. Edit=ask, steps=30.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "sequential-thinking_*": true, "echovault_*": true, "pharos_*": true },
+      "permission": { "edit": "ask", "bash": "ask" },
+      "steps": 30
+    },
+    "test-runner": {
+      "description": "Subagent for fast Rust feedback. Cargo test/clippy/rg only. No edits.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "pharos_*": true },
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "cargo test*": "allow",
+          "cargo clippy*": "allow",
+          "rg *": "allow",
+          "*": "deny"
+        },
+        "todowrite": "allow"
+      }
+    },
+    "ch-migrator": {
+      "description": "Subagent for ClickHouse schema changes (src/storage/). Bash limited to curl :8123 + cargo check.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "echovault_*": true },
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "curl http://localhost:8123/*": "allow",
+          "cargo check*": "allow",
+          "*": "deny"
+        }
+      }
+    },
+    "scraper-builder": {
+      "description": "Subagent for scraper selector hardening + AI fallback wiring (src/scrapers/ and src/models/). echovault for recall.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "echovault_*": true, "scrapling_*": true, "pharos_*": true },
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "cargo check*": "allow",
+          "cargo clippy*": "allow",
+          "rg *": "allow",
+          "*": "deny"
+        },
+        "webfetch": "allow"
+      }
+    },
+    "sniper-implementer": {
+      "description": "Subagent for the change_detector + priority_queue + workers + sink pipeline (src/pipeline/). Edit=ask, bash=deny.",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "echovault_*": true },
+      "permission": { "edit": "ask", "bash": "deny" }
+    },
+    "backend-trait-refactor": {
+      "description": "Subagent for Sprint 1 CarRepository trait extraction (unblocks fake-server mode for frontend dev).",
+      "mode": "subagent",
+      "hidden": true,
+      "tools": { "echovault_*": true },
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "cargo check*": "allow",
+          "cargo test*": "allow",
+          "cargo clippy*": "allow",
+          "rg *": "allow",
+          "*": "deny"
+        }
+      }
+    }
+  },
+  "instructions": ["./AGENTS.md"],
+  "watcher": {
+    "ignore": [
+      "target/**",
+      ".git/**",
+      "graphify-out/**",
+      "**/graphify-out/**",
+      "node_modules/**",
+      "**/node_modules/**",
+      "models/ocr/**",
+      "web/package-lock.json",
+      "web/bun.lockb",
+      "web/.expo/**",
+      "scripts/**/*.log",
+      "*.png",
+      "*.jpg"
+    ]
+  },
+  "lsp": true,
+  "formatter": true,
+  "snapshot": true,
+  "autoupdate": true
+}
