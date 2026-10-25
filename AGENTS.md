@@ -41,7 +41,7 @@
 
 ## Traps
 
-- Large parts of `opencode.json` are inherited from an unrelated genealogy project (`build`/`crawl`/`ocr` agents, geno-dbase.ru, `downloads/**` watcher ignores). Don't infer this repo's structure from it.
+- `opencode.json` was inherited from an unrelated Rust project (`car_data_intelligence` — cargo agents, `pharos` MCP, `target/**`/`models/ocr/**`/`web/*` watcher ignores) and cleaned up 2026-10-25; don't reintroduce its artifacts or infer this repo's structure from config history.
 - `skills-lock.json` and `.agents/skills/` are vendored third-party skills (mattpocock/skills), not course content; don't rewrite them.
 - `.env` is gitignored and only defines `GROQ_API_KEY`; never put real keys in lessons.
 - Known broken links: `ru/*/Week_8/Day_3.md` is missing in both tracks (footer links skip it).
