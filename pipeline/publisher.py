@@ -142,16 +142,28 @@ def build_reply_markup(blob_url=None, discuss_url=None):
     return {"inline_keyboard": rows}
 
 
-def send_rich_message(token, chat_id, markdown_text, reply_markup=None):
+def send_rich_message(token, chat_id, markdown_text):
     payload = {
         "chat_id": chat_id,
         "rich_message": {"markdown": markdown_text},
     }
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
     return _post(
         token,
         "sendRichMessage",
+        json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        {"Content-Type": "application/json"},
+    )
+
+
+def send_buttons(token, chat_id, markup):
+    payload = {
+        "chat_id": chat_id,
+        "text": "🔗 Ссылки урока:",
+        "reply_markup": markup,
+    }
+    return _post(
+        token,
+        "sendMessage",
         json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         {"Content-Type": "application/json"},
     )
@@ -274,7 +286,7 @@ def cmd_dry_run(files, cfg, repo_root):
         )
         if markup:
             labels = [b["text"] for row in markup["inline_keyboard"] for b in row]
-            print(f"  кнопки (часть 1): {', '.join(labels)}")
+            print(f"  кнопки (отдельным сообщением): {', '.join(labels)}")
         if problems:
             failed += 1
             continue
@@ -313,12 +325,13 @@ def cmd_publish(files, cfg, repo_root):
             f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
         )
         for i, part in enumerate(parts, 1):
-            response = send_rich_message(
-                token, chat_id, part, markup if i == 1 else None
-            )
+            response = send_rich_message(token, chat_id, part)
             print(
                 f"  отправлена часть {i}/{len(parts)} (message_id {_message_label(response)})"
             )
+        if markup:
+            response = send_buttons(token, chat_id, markup)
+            print(f"  отправлены кнопки (message_id {_message_label(response)})")
         caption = f"📄 Исходник урока: {blob_base}/{md_rel}"
         response = send_document(
             token, chat_id, path.name, src.encode("utf-8"), caption

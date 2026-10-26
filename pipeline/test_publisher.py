@@ -147,15 +147,20 @@ class BuildReplyMarkup(unittest.TestCase):
         self.assertEqual(len(markup["inline_keyboard"]), 2)
 
 
-class SendRichMessageMarkup(unittest.TestCase):
-    def test_markup_in_payload(self):
-        markup = {"inline_keyboard": [[{"text": "к", "url": "https://x"}]]}
-        with mock.patch.object(publisher, "_post", return_value={}) as post_mock:
-            publisher.send_rich_message("T", "@c", "текст", markup)
-        payload = json.loads(post_mock.call_args.args[2])
-        self.assertEqual(payload["reply_markup"], markup)
+class SendButtons(unittest.TestCase):
+    MARKUP = {
+        "inline_keyboard": [[{"text": "к", "url": "https://x"}]],
+    }
 
-    def test_no_markup_omits_key(self):
+    def test_sends_markup_via_send_message(self):
+        with mock.patch.object(publisher, "_post", return_value={}) as post_mock:
+            publisher.send_buttons("T", "@c", self.MARKUP)
+        self.assertEqual(post_mock.call_args.args[1], "sendMessage")
+        payload = json.loads(post_mock.call_args.args[2])
+        self.assertEqual(payload["reply_markup"], self.MARKUP)
+        self.assertEqual(payload["chat_id"], "@c")
+
+    def test_rich_message_omits_markup_key(self):
         with mock.patch.object(publisher, "_post", return_value={}) as post_mock:
             publisher.send_rich_message("T", "@c", "текст")
         payload = json.loads(post_mock.call_args.args[2])
@@ -163,63 +168,59 @@ class SendRichMessageMarkup(unittest.TestCase):
 
 
 class PublishButtons(unittest.TestCase):
-    def test_markup_on_first_part_only(self):
+    def capture_into(self, payloads):
+        def capture(token, method, data, headers):
+            try:
+                payloads.append((method, json.loads(data)))
+            except json.JSONDecodeError:
+                payloads.append((method, {}))
+            return {"result": {"message_id": 1}}
+
+        return capture
+
+    def publish(self, cfg):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "day.md").write_text("Привет", encoding="utf-8")
-            cfg = {
+            payloads = []
+            with mock.patch.object(
+                publisher, "_post", side_effect=self.capture_into(payloads)
+            ):
+                code = publisher.cmd_publish(["day.md"], cfg, root)
+            self.assertEqual(code, 0)
+            return payloads
+
+    def test_buttons_sent_as_separate_message(self):
+        payloads = self.publish(
+            {
                 "BOT_TOKEN": "T",
                 "CHANNEL_ID": "@c",
                 "REPO_URL": "https://github.com/a/b",
                 "REPO_BRANCH": "main",
                 "DISCUSS_URL": "https://t.me/c/1",
             }
-            payloads = []
-
-            def capture(token, method, data, headers):
-                try:
-                    payloads.append(json.loads(data))
-                except json.JSONDecodeError:
-                    payloads.append({})
-                return {"result": {"message_id": 1}}
-
-            with mock.patch.object(publisher, "_post", side_effect=capture):
-                code = publisher.cmd_publish(["day.md"], cfg, root)
-            self.assertEqual(code, 0)
-            rich = [p for p in payloads if "rich_message" in p]
-            self.assertEqual(len(rich), 1)
-            self.assertEqual(
-                rich[0]["reply_markup"]["inline_keyboard"][0][0]["url"],
-                "https://github.com/a/b/blob/main/day.md",
-            )
-            self.assertEqual(
-                rich[0]["reply_markup"]["inline_keyboard"][1][0]["url"],
-                "https://t.me/c/1",
-            )
+        )
+        rich = [p for m, p in payloads if m == "sendRichMessage"]
+        self.assertEqual(len(rich), 1)
+        self.assertNotIn("reply_markup", rich[0])
+        button_calls = [p for m, p in payloads if m == "sendMessage"]
+        self.assertEqual(len(button_calls), 1)
+        rows = button_calls[0]["reply_markup"]["inline_keyboard"]
+        self.assertEqual(rows[0][0]["url"], "https://github.com/a/b/blob/main/day.md")
+        self.assertEqual(rows[1][0]["url"], "https://t.me/c/1")
 
     def test_no_discuss_url_single_row(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            (root / "day.md").write_text("Привет", encoding="utf-8")
-            cfg = {
+        payloads = self.publish(
+            {
                 "BOT_TOKEN": "T",
                 "CHANNEL_ID": "@c",
                 "REPO_URL": "https://github.com/a/b",
             }
-            payloads = []
-
-            def capture(token, method, data, headers):
-                try:
-                    payloads.append(json.loads(data))
-                except json.JSONDecodeError:
-                    payloads.append({})
-                return {"result": {"message_id": 1}}
-
-            with mock.patch.object(publisher, "_post", side_effect=capture):
-                code = publisher.cmd_publish(["day.md"], cfg, root)
-            self.assertEqual(code, 0)
-            rich = [p for p in payloads if "rich_message" in p]
-            self.assertEqual(len(rich[0]["reply_markup"]["inline_keyboard"]), 1)
+        )
+        button_calls = [p for m, p in payloads if m == "sendMessage"]
+        self.assertEqual(len(button_calls), 1)
+        rows = button_calls[0]["reply_markup"]["inline_keyboard"]
+        self.assertEqual(len(rows), 1)
 
 
 class LoadEnvKnownKeys(unittest.TestCase):
