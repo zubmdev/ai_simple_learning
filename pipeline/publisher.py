@@ -118,11 +118,24 @@ def _post(token, method, data, headers):
         raise RuntimeError(f"{method}: некорректный JSON-ответ")
 
 
-def send_rich_message(token, chat_id, markdown_text):
+def build_reply_markup(blob_url=None, discuss_url=None):
+    rows = []
+    if blob_url:
+        rows.append([{"text": "📄 Урок на GitHub", "url": blob_url}])
+    if discuss_url:
+        rows.append([{"text": "💬 Обсудить", "url": discuss_url}])
+    if not rows:
+        return None
+    return {"inline_keyboard": rows}
+
+
+def send_rich_message(token, chat_id, markdown_text, reply_markup=None):
     payload = {
         "chat_id": chat_id,
         "rich_message": {"markdown": markdown_text},
     }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     return _post(
         token,
         "sendRichMessage",
@@ -243,6 +256,12 @@ def cmd_dry_run(files, cfg, repo_root):
             continue
         _, converted, parts, problems = _prepare(md_rel, repo_root, raw_base, blob_base)
         _report(md_rel, parts, problems, converted)
+        markup = build_reply_markup(
+            f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
+        )
+        if markup:
+            labels = [b["text"] for row in markup["inline_keyboard"] for b in row]
+            print(f"  кнопки (часть 1): {', '.join(labels)}")
         if problems:
             failed += 1
             continue
@@ -277,8 +296,13 @@ def cmd_publish(files, cfg, repo_root):
         if problems:
             failed += 1
             continue
+        markup = build_reply_markup(
+            f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
+        )
         for i, part in enumerate(parts, 1):
-            response = send_rich_message(token, chat_id, part)
+            response = send_rich_message(
+                token, chat_id, part, markup if i == 1 else None
+            )
             print(
                 f"  отправлена часть {i}/{len(parts)} (message_id {_message_label(response)})"
             )
@@ -306,6 +330,10 @@ def build_parser():
         "--repo-url", help="URL репозитория, напр. https://github.com/user/repo"
     )
     parser.add_argument("--repo-branch", help="ветка репозитория (по умолчанию main)")
+    parser.add_argument(
+        "--discuss-url",
+        help="URL кнопки «Обсудить» (переопределяет DISCUSS_URL из .env)",
+    )
     parser.add_argument("--env", default=".env", help="путь к .env-файлу")
     return parser
 
@@ -317,6 +345,8 @@ def main(argv=None):
         cfg["REPO_URL"] = args.repo_url
     if args.repo_branch:
         cfg["REPO_BRANCH"] = args.repo_branch
+    if args.discuss_url:
+        cfg["DISCUSS_URL"] = args.discuss_url
     repo_root = Path.cwd()
     try:
         if args.check:

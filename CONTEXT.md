@@ -51,3 +51,19 @@ _Avoid_: lesson, tutoring, mentoring.
 **Learner**:
 A person taking the course, whether in the free entry, the self-paced library, or as a consultation client.
 _Avoid_: student, user.
+
+**Gateway bot**:
+The stateless Telegram bot (@vibecoding_start_bot) that answers /start with a channel invite, records the source in the owner's DM, and forwards free-text messages to the owner. It keeps no server-side state and no database.
+_Avoid_: onboarding form, registration bot, chatbot.
+
+**Hook post**:
+A short (≤500 character) Threads post that describes a real beginner problem and invites replies; the channel link goes in the card or first reply. Written and posted manually, one per lesson.
+_Avoid_: repost, cross-post, announcement (it is a conversation starter, not a lesson copy).
+
+**Named invite link**:
+A channel invite link created with a source name (e.g. threads) so joins can be counted per campaign; the secondary attribution mechanism after the gateway bot's ?start= parameter.
+_Avoid_: UTM link, tracking link.
+
+**Join snapshot**:
+The daily subscriber-count record appended to docs/metrics/subscribers.log by pipeline/snapshot.py (getChatMemberCount), with the delta DM'd to the owner.
+_Avoid_: analytics, dashboard, stats export.

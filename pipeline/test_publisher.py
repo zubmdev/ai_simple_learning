@@ -1,3 +1,4 @@
+import json
 import os
 import tempfile
 import unittest
@@ -116,6 +117,109 @@ class PostMasking(unittest.TestCase):
         ):
             with self.assertRaises(RuntimeError):
                 publisher._post(self.TOKEN, "sendRichMessage", b"{}", {})
+
+
+class BuildReplyMarkup(unittest.TestCase):
+    def test_empty_is_none(self):
+        self.assertIsNone(publisher.build_reply_markup(None, None))
+
+    def test_github_only(self):
+        url = "https://github.com/a/b/blob/main/ru/beginner/Week_1/Day_1.md"
+        markup = publisher.build_reply_markup(url)
+        self.assertEqual(
+            markup,
+            {
+                "inline_keyboard": [
+                    [{"text": "📄 Урок на GitHub", "url": url}],
+                ]
+            },
+        )
+
+    def test_discuss_only(self):
+        markup = publisher.build_reply_markup(discuss_url="https://t.me/c/1")
+        self.assertEqual(
+            markup,
+            {"inline_keyboard": [[{"text": "💬 Обсудить", "url": "https://t.me/c/1"}]]},
+        )
+
+    def test_both_rows(self):
+        markup = publisher.build_reply_markup("https://x", "https://y")
+        self.assertEqual(len(markup["inline_keyboard"]), 2)
+
+
+class SendRichMessageMarkup(unittest.TestCase):
+    def test_markup_in_payload(self):
+        markup = {"inline_keyboard": [[{"text": "к", "url": "https://x"}]]}
+        with mock.patch.object(publisher, "_post", return_value={}) as post_mock:
+            publisher.send_rich_message("T", "@c", "текст", markup)
+        payload = json.loads(post_mock.call_args.args[2])
+        self.assertEqual(payload["reply_markup"], markup)
+
+    def test_no_markup_omits_key(self):
+        with mock.patch.object(publisher, "_post", return_value={}) as post_mock:
+            publisher.send_rich_message("T", "@c", "текст")
+        payload = json.loads(post_mock.call_args.args[2])
+        self.assertNotIn("reply_markup", payload)
+
+
+class PublishButtons(unittest.TestCase):
+    def test_markup_on_first_part_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "day.md").write_text("Привет", encoding="utf-8")
+            cfg = {
+                "BOT_TOKEN": "T",
+                "CHANNEL_ID": "@c",
+                "REPO_URL": "https://github.com/a/b",
+                "REPO_BRANCH": "main",
+                "DISCUSS_URL": "https://t.me/c/1",
+            }
+            payloads = []
+
+            def capture(token, method, data, headers):
+                try:
+                    payloads.append(json.loads(data))
+                except json.JSONDecodeError:
+                    payloads.append({})
+                return {"result": {"message_id": 1}}
+
+            with mock.patch.object(publisher, "_post", side_effect=capture):
+                code = publisher.cmd_publish(["day.md"], cfg, root)
+            self.assertEqual(code, 0)
+            rich = [p for p in payloads if "rich_message" in p]
+            self.assertEqual(len(rich), 1)
+            self.assertEqual(
+                rich[0]["reply_markup"]["inline_keyboard"][0][0]["url"],
+                "https://github.com/a/b/blob/main/day.md",
+            )
+            self.assertEqual(
+                rich[0]["reply_markup"]["inline_keyboard"][1][0]["url"],
+                "https://t.me/c/1",
+            )
+
+    def test_no_discuss_url_single_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "day.md").write_text("Привет", encoding="utf-8")
+            cfg = {
+                "BOT_TOKEN": "T",
+                "CHANNEL_ID": "@c",
+                "REPO_URL": "https://github.com/a/b",
+            }
+            payloads = []
+
+            def capture(token, method, data, headers):
+                try:
+                    payloads.append(json.loads(data))
+                except json.JSONDecodeError:
+                    payloads.append({})
+                return {"result": {"message_id": 1}}
+
+            with mock.patch.object(publisher, "_post", side_effect=capture):
+                code = publisher.cmd_publish(["day.md"], cfg, root)
+            self.assertEqual(code, 0)
+            rich = [p for p in payloads if "rich_message" in p]
+            self.assertEqual(len(rich[0]["reply_markup"]["inline_keyboard"]), 1)
 
 
 if __name__ == "__main__":
