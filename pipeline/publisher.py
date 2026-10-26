@@ -158,7 +158,7 @@ def send_rich_message(token, chat_id, markdown_text):
 def send_buttons(token, chat_id, markup):
     payload = {
         "chat_id": chat_id,
-        "text": "🔗 Ссылки урока:",
+        "text": "💬 Обсуждение урока — ссылки тут:",
         "reply_markup": markup,
     }
     return _post(
