@@ -4,6 +4,8 @@
 
 **Date:** 2026-10-25
 
+**Amended:** 2026-10-26 — launch pulled forward: Day 0 published Mon 2026-10-26 (manual soft launch), Days 1–5 run Tue–Sat 2026-10-27…10-31 at 09:00 Minsk via the updated schedule.
+
 Week 1+ is deployed on Telegram as three pieces: the public channel «AI - это просто» (the course feed), a linked discussion group for per-lesson comments, and the bot @vibecoding_start_bot. The bot is a **stateless webhook gateway** (`pipeline/bot.py`, stdlib `http.server`) with no server-side state and no database. Every `/start` is answered with a greeting whose first message carries an inline button with the channel invite; nothing gates content.
 
 Grounding: [2026-10-25 research note](../research/2026-10-25-telegram-threads-week1-funnel.md)
@@ -14,7 +16,7 @@ Grounding: [2026-10-25 research note](../research/2026-10-25-telegram-threads-we
 4. **Calendar-gated publishing (A4).** `launch/schedule.tsv` lists date (UTC), time, file, note; a GitHub Actions cron at 06:00 UTC (09:00 Minsk) publishes rows whose date equals today's UTC date. Nothing publishes outside the schedule.
 5. **$0 infra.** GitHub Actions crons for publisher + subscriber snapshot; the webhook bot runs on a free PaaS tier; no paid services.
 6. **Threads (@ai_kontur_by) is a manual feeder.** RU hook posts are written and posted by hand; no Threads API automation for now. The handle needs in-app verification (A5, pending human check).
-7. **Launch.** Soft-launch Day 0 on Sat 2026-11-01; full launch Mon 2026-11-02; one lesson/day at 09:00 Minsk through Fri 2026-11-06 (Day 5).
+7. **Launch.** Day 0 soft-launched Mon 2026-10-26 (published manually); one lesson/day at 09:00 Minsk Tue–Sat 2026-10-27…10-31 (Day 1–Day 5).
 
 ## Why
 
