@@ -8,7 +8,7 @@
 
 | Term | Simple Explanation | Example |
 |------|--------------------|---------|
-| **LLM** (Large Language Model) | "Brain" of AI — program that understands text and generates answers | GPT-4, Claude, Llama |
+| **LLM** (Large Language Model) | "Brain" of AI — program that understands text and generates answers | GPT-OSS, Qwen, Gemma |
 | **Prompt** | Your message/request to AI | "Write a Python game" |
 | **Code** | Instructions for computer in language it understands | `print("Hello")` |
 | **Program** | Set of instructions (code) that computer executes | Game, website, app |
@@ -20,7 +20,7 @@
 
 | Term | Simple Explanation | Example |
 |------|--------------------|---------|
-| **Model** | Specific version of AI with certain capabilities | Llama 3.1 8B, GPT-4 |
+| **Model** | Specific version of AI with certain capabilities | qwen3.5:2b, gpt-oss:20b |
 | **API** (Application Programming Interface) | Way programs communicate with each other | Groq API, OpenAI API |
 | **API Key** | Password for API access | `gsk_abc123...` |
 | **Token** | Unit of text for AI (≈ 1 word or part) | "Hello" = ~1-2 tokens |

@@ -15,17 +15,17 @@
 ### Multi-Model Approach:
 
 ```
-Fast Planning (Groq/Qwen 1.5B):
+Fast Planning (Groq/Qwen3.5 2B):
 - Architecture decisions
 - Feature planning
 - Quick iterations
 
-Complex Logic (Llama 3 8B/DeepSeek):
+Complex Logic (GPT-OSS 20B/Qwen3 14B):
 - Algorithm implementation
 - Performance optimization
 - Security considerations
 
-Code Review (Claude/GPT-4):
+Code Review (Groq GPT-OSS-120B):
 - Architecture validation
 - Security audit
 - Best practices check
