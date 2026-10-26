@@ -222,5 +222,47 @@ class PublishButtons(unittest.TestCase):
             self.assertEqual(len(rich[0]["reply_markup"]["inline_keyboard"]), 1)
 
 
+class LoadEnvKnownKeys(unittest.TestCase):
+    def test_known_key_from_os_environ_without_file(self):
+        old = os.environ.get("OWNER_CHAT_ID")
+        try:
+            os.environ["OWNER_CHAT_ID"] = "42"
+            values = load_env("/nonexistent/.env")
+            self.assertEqual(values.get("OWNER_CHAT_ID"), "42")
+        finally:
+            if old is None:
+                del os.environ["OWNER_CHAT_ID"]
+            else:
+                os.environ["OWNER_CHAT_ID"] = old
+
+    def test_unknown_env_key_ignored(self):
+        old = os.environ.get("NOT_A_CONFIG_KEY")
+        try:
+            os.environ["NOT_A_CONFIG_KEY"] = "x"
+            values = load_env("/nonexistent/.env")
+            self.assertNotIn("NOT_A_CONFIG_KEY", values)
+        finally:
+            if old is None:
+                del os.environ["NOT_A_CONFIG_KEY"]
+            else:
+                os.environ["NOT_A_CONFIG_KEY"] = old
+
+    def test_file_value_overridden_by_environ_for_known_key(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".env", delete=False) as f:
+            f.write("OWNER_CHAT_ID=1\n")
+            path = f.name
+        old = os.environ.get("OWNER_CHAT_ID")
+        try:
+            os.environ["OWNER_CHAT_ID"] = "2"
+            values = load_env(path)
+            self.assertEqual(values["OWNER_CHAT_ID"], "2")
+        finally:
+            if old is None:
+                del os.environ["OWNER_CHAT_ID"]
+            else:
+                os.environ["OWNER_CHAT_ID"] = old
+            os.unlink(path)
+
+
 if __name__ == "__main__":
     unittest.main()

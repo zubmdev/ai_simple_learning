@@ -27,6 +27,19 @@ PLACEHOLDER_BLOB = "https://github.com/PLACEHOLDER/course/blob/main"
 
 _MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 
+CONFIG_KEYS = frozenset(
+    {
+        "BOT_TOKEN",
+        "CHANNEL_ID",
+        "REPO_URL",
+        "REPO_BRANCH",
+        "OWNER_CHAT_ID",
+        "DISCUSS_URL",
+        "CHANNEL_INVITE_URL",
+        "WEBHOOK_SECRET",
+    }
+)
+
 
 def load_env(path):
     values = {}
@@ -38,7 +51,7 @@ def load_env(path):
                 continue
             key, _, value = line.partition("=")
             values[key.strip()] = value.strip().strip('"').strip("'")
-    for key in values:
+    for key in sorted(set(values) | CONFIG_KEYS):
         if key in os.environ:
             values[key] = os.environ[key]
     return values
