@@ -6,288 +6,147 @@
 
 ## 🎯 Цель дня
 
-Понять архитектуру MCP и модель Client-Server-Transport.
+Понять архитектуру MCP: кто клиент, кто сервер, какие бывают транспорты и capabilities. К концу дня ты сможешь для любого MCP-сервера ответить на три вопроса: что он умеет, как подключается и что он может трогать в твоей системе.
 
 ---
 
-## Архитектура MCP
+## 🧠 Зачем нужен MCP
+
+**Аналогия:** MCP — это USB-C для ИИ-агентов. Раньше каждый инструмент подключался к ассистенту по-своему: свой формат, свой плагин, своя поддержка. MCP (Model Context Protocol) — открытый стандарт: любой MCP-клиент (OpenCode, Cline и десятки других) работает с любым MCP-сервером.
 
 ### Компоненты:
 
-```
+```text
 ┌─────────────────────────────────────────┐
-│           MCP Client (Continue.dev)     │
-│  - Управляет соединениями                │
-│  - Диспатчит tool calls                  │
-│  - Интегрируется с LLM                   │
+│      MCP Client (OpenCode или Cline)    │
+│  - Управляет соединениями               │
+│  - Показывает тебе approvals            │
+│  - Передаёт tool calls в LLM и обратно  │
 └─────────────┬───────────────────────────┘
               │ JSON-RPC 2.0 over Transport
               ▼
 ┌─────────────────────────────────────────┐
-│           MCP Server                     │
-│  - Resources (доступ к данным)           │
-│  - Tools (выполнение действий)           │
-│  - Prompts (шаблоны)                     │
+│           MCP Server                    │
+│  - Resources (чтение данных)            │
+│  - Tools (выполнение действий)          │
+│  - Prompts (готовые шаблоны)            │
 └─────────────┬───────────────────────────┘
               │
               ▼
-        ┌──────────┐
-        │ External │
-        │ System   │
-        └──────────┘
+      ┌──────────────┐
+      │   Внешняя    │
+      │   система    │
+      └──────────────┘
 ```
 
-### Transport Types:
-
-```
-1. Stdio Transport
-   - Server как дочерний процесс
-   - Коммуникация через stdin/stdout
-   - Идеально для локальных серверов
-
-2. HTTP/SSE Transport
-   - Server как HTTP сервис
-   - Server-Sent Events для streaming
-   - Для удалённых серверов
-
-3. WebSocket Transport
-   - Двунаправленная коммуникация
-   - Для real-time interactions
-```
+Клиент — это твой агент (в нашем курсе OpenCode, для начинающих — Cline). Сервер — отдельная программа, которую ты установил. Важно: **сервер запускается с правами твоего пользователя**. Он не «магический» — это обычный процесс на твоей машине или сервис в сети.
 
 ---
 
-## MCP Protocol Specification
+## Транспорты: stdio vs HTTP
 
-### Основные методы JSON-RPC:
+```text
+1. stdio (локальный)
+   - Сервер — дочерний процесс клиента
+   - Общение через stdin/stdout
+   - Работает с правами твоего пользователя
+   - Так подключены filesystem, git, sqlite
+
+2. HTTP (удалённый, Streamable HTTP)
+   - Сервер — сетевой сервис
+   - Клиент ходит по HTTPS
+   - Нужна аутентификация (токен, OAuth)
+   - Доверяешь ещё и владельцу сервиса
+```
+
+💡 Историческая поправка: в ранних версиях спецификации удалённый транспорт назывался HTTP+SSE, затем его заменил Streamable HTTP; WebSocket из спецификации убрали. Если видишь старую статью с «WebSocket transport» — она устарела.
+
+**Смысл для безопасности:** stdio-сервер — часть твоей машины (минимум прав через аргументы запуска), удалённый сервер — плюс доверие к чужой инфраструктуре и сети. Оба типа одинаково опасны в одном: код или сервис делает то, что написано в нём, а не то, что ты подразумевал.
+
+---
+
+## Capabilities: Resources, Tools, Prompts
+
+| Capability | Что даёт | Пример | Риск |
+|------------|----------|--------|------|
+| **Resources** | Чтение данных | Схема БД, содержимое файла | Утечка данных, если scope шире нужного |
+| **Tools** | Действия | SQL-запрос, запись файла, push | Самый опасный тип: меняет мир |
+| **Prompts** | Готовые шаблоны | `/analyze-table users` | Низкий; просто текст в контекст |
+
+### Как это выглядит по протоколу (JSON-RPC 2.0):
 
 ```json
-// List available resources
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "resources/list"
-}
-
-// Read a resource
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "resources/read",
-  "params": {
-    "uri": "file:///path/to/file.txt"
-  }
-}
-
-// List tools
 {
   "jsonrpc": "2.0",
   "id": 3,
   "method": "tools/list"
 }
+```
 
-// Call a tool
+```json
 {
   "jsonrpc": "2.0",
   "id": 4,
   "method": "tools/call",
   "params": {
-    "name": "query_database",
+    "name": "read_file",
     "arguments": {
-      "sql": "SELECT * FROM users"
+      "path": "/home/max/projects/mcp-lab/notes.md"
     }
   }
 }
 ```
 
----
-
-## MCP Server Capabilities
-
-### Resources:
-
-```typescript
-// Resource definition
-interface Resource {
-  uri: string;          // Уникальный идентификатор
-  name: string;         // Человекочитаемое имя
-  description?: string;
-  mimeType?: string;
-}
-
-// Example
-{
-  uri: "sqlite:///db/users",
-  name: "users table",
-  mimeType: "application/json"
-}
-```
-
-### Tools:
-
-```typescript
-// Tool definition
-interface Tool {
-  name: string;
-  description: string;
-  inputSchema: JSONSchema;  // Валидация аргументов
-}
-
-// Example
-{
-  name: "execute_sql",
-  description: "Execute SQL query",
-  inputSchema: {
-    type: "object",
-    properties: {
-      query: { type: "string" },
-      params: { type: "array" }
-    },
-    required: ["query"]
-  }
-}
-```
-
-### Prompts:
-
-```typescript
-// Prompt template
-interface Prompt {
-  name: string;
-  description: string;
-  arguments: PromptArgument[];
-}
-
-// Example
-{
-  name: "analyze_table",
-  description: "Analyze table structure and data",
-  arguments: [
-    {
-      name: "table_name",
-      description: "Name of the table to analyze",
-      required: true
-    }
-  ]
-}
-```
+У каждого tool есть `inputSchema` (JSON Schema) — контракт аргументов. Клиент показывает тебе схему в диалоге одобрения: это твой шанс заметить, что «безобидный» инструмент принимает путь `../../.ssh`.
 
 ---
 
-## Интеграция с Continue.dev
+## 🚨 Три факта, которые определяют безопасность MCP
 
-### Config structure:
-
-```json
-{
-  "mcpServers": {
-    "server-name": {
-      "command": "node",
-      "args": ["/path/to/server.js"],
-      "env": {
-        "API_KEY": "xxx"
-      },
-      "disabled": false
-    }
-  }
-}
-```
-
-### Как Continue.dev работает с MCP:
-
-```
-1. При старте VS Code:
-   - Читает config.json
-   - Запускает каждый MCP server
-   - Инициализирует соединение
-
-2. При обработке промпта:
-   - LLM решает, нужен ли tool call
-   - Если да → вызывает MCP tool
-   - Возвращает результат в контекст LLM
-
-3. При закрытии VS Code:
-   - Gracefully shutdown servers
-   - Закрывает transport connections
-```
+1. **Сервер работает с твоими правами.** stdio-процесс может читать и писать всё, что может твой пользователь — если ты не ограничил его аргументами (пути, read-only пользователь БД).
+2. **Одобряет клиент, а не сервер.** Решение «выполнить ли tool call» принимает OpenCode/Cline по твоим настройкам approvals. Сервер не может себя «разрешить».
+3. **Установка сервера = запуск чужого кода.** npm/PyPI-пакет выполняется на твоей машине. Проверка перед установкой — тема завтрашнего дня.
 
 ---
 
-## MCP vs LangChain Tools
+## Проверка
 
-| Aspect | MCP | LangChain Tools |
-|--------|-----|-----------------|
-| Standard | Open protocol | Framework-specific |
-| Interoperability | Any MCP client | LangChain only |
-| Server distribution | Independent servers | Bundled with app |
-| Configuration | JSON config | Code-based |
-| Discovery | Runtime | Static definition |
+Ответь себе на четыре вопроса (можно письменно):
 
----
-
-## SDK и библиотеки
-
-### TypeScript SDK:
-
-```typescript
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
-const server = new Server({
-  name: 'my-mcp-server',
-  version: '1.0.0'
-}, {
-  capabilities: {
-    resources: {},
-    tools: {}
-  }
-});
-
-// Register tool
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [{
-    name: 'my_tool',
-    description: 'My tool description',
-    inputSchema: { type: 'object', properties: {} }
-  }]
-}));
-
-// Start server
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-### Python SDK:
-
-```python
-from mcp.server import Server
-from mcp.server.stdio import stdio_server
-
-server = Server("my-mcp-server")
-
-@server.list_tools()
-async def list_tools():
-    return [{
-        "name": "my_tool",
-        "description": "My tool",
-        "inputSchema": {"type": "object", "properties": {}}
-    }]
-
-async def main():
-    async with stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream)
-```
+1. Кто инициирует соединение: клиент или сервер?
+2. Чем stdio-сервер отличается от удалённого по доверию?
+3. Какой capability меняет твои файлы: Resource, Tool или Prompt?
+4. Где настраивается одобрение tool calls?
 
 ---
 
 ## Checklist дня ✅
 
-- [ ] Понял Client-Server-Transport модель
-- [ ] Изучил JSON-RPC 2.0 методы
-- [ ] Разобрался в Resources, Tools, Prompts
-- [ ] Понял интеграцию с Continue.dev
-- [ ] Увидел различия с LangChain Tools
+- [ ] Понял модель клиент — сервер — транспорт
+- [ ] Различаю stdio и HTTP транспорты и их риски
+- [ ] Знаю разницу Resources / Tools / Prompts
+- [ ] Понял, что approvals настраиваются в клиенте
+- [ ] Ответил на 4 контрольных вопроса
 
 ---
+
+## 🎯 Миссия
+
+Создай файл `mcp-architecture.md` в любой рабочей папке (например, `~/projects/mcp-lab/`) и заполни таблицу про **пять** реальных инструментов, которые ты хочешь дать агенту:
+
+```markdown
+# Моя карта MCP
+
+| Инструмент | Capability | Транспорт | Что может трогать | Нужен approval? |
+|------------|-----------|-----------|-------------------|-----------------|
+| read_file (filesystem) | Tool | stdio | файлы одной папки | да, на запись |
+| ... | ... | ... | ... | ... |
+```
+
+**Готово, когда:** файл существует, 5 строк заполнены, есть хотя бы один Resource и один Tool, и для каждого инструмента ты записал «радиус действия» — что именно он сможет прочитать или изменить.
+
+---
+
+⏭️ Что дальше: завтра — каталог готовых серверов и как не установить вредоносный.
 
 📚 [На следующий день →](./Day_2.md)

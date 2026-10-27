@@ -1,4 +1,4 @@
-# День 2: MCP Servers Catalog — готовые решения 📦
+# День 2: MCP Servers Catalog — проверка перед установкой 📦
 
 **Трек:** 👨‍💻 Программист | **Время:** 30 минут
 
@@ -6,290 +6,150 @@
 
 ## 🎯 Цель дня
 
-Изучить каталог MCP-серверов и понять их capabilities.
+Изучить каталог MCP-серверов и выработать привычку: **не устанавливать сервер, не проверив его**. К концу дня у тебя будет личный allowlist — список проверенных серверов с зафиксированными версиями и минимальными правами.
 
 ---
 
-## Официальный каталог
+## 🧠 Где искать серверы
 
-```
-https://github.com/modelcontextprotocol/servers
-```
+**Аналогия:** выбор MCP-сервера — это как выбор библиотеки для продакшна: смотришь не на README, а на кто поддерживает, как давно и что код реально делает.
 
-### Категории:
+- Официальные reference-серверы: `github.com/modelcontextprotocol/servers` (репозиторий образцов; проверь его текущий статус — его переводили в архив, это само по себе сигнал проверять актуальные форки)
+- Официальный реестр MCP: `registry.modelcontextprotocol.io`
+- Каталоги сообщества: `github.com/punkpeye/awesome-mcp-servers`
+- Прямой поиск: npm (TypeScript-серверы), PyPI (Python-серверы)
 
-```
-servers/
-├── src/
-│   ├── databases/        # SQLite, PostgreSQL, MySQL
-│   ├── filesystem/       # File system access
-│   ├── git/              # Git operations
-│   ├── github/           # GitHub API
-│   ├── google/           # Google Maps, Drive, etc
-│   ├── brave-search/     # Web search
-│   └── ...               # 20+ servers
-```
+💡 Сервер из каталога ≠ безопасный сервер. Каталоги собирают ссылки; проверку делаешь ты.
 
 ---
 
-## Database MCP Servers
+## 🛠️ Четыре базовых сервера и их минимальные права
 
-### SQLite
+### filesystem — доступ к файлам
+
+Даёт tools: `read_file`, `write_file`, `list_directory`, `search_files`. Ключевая настройка — **scope**: пути, перечисленные в аргументах запуска.
 
 ```json
 {
-  "capabilities": {
-    "resources": {
-      "list": "List tables",
-      "read": "Read table schema"
-    },
-    "tools": {
-      "query": "Execute SQL queries",
-      "list_tables": "Get all tables",
-      "describe_table": "Get table schema"
-    }
+  "filesystem": {
+    "type": "local",
+    "command": [
+      "npx",
+      "-y",
+      "@modelcontextprotocol/server-filesystem@0.6.2",
+      "/home/max/projects/mcp-lab"
+    ],
+    "enabled": true
   }
 }
 ```
 
-**Use cases:**
-- Local development
-- Testing
-- Prototyping
+🚨 Агент сможет трогать **только** перечисленные пути. Корень `/` или домашний каталог — запретная зона. Версию `@0.6.2` замени на актуальную (как её найти — ниже).
 
-### PostgreSQL
+### sqlite / postgres — доступ к базам
+
+Python-сервер `mcp-server-sqlite` работает с одним файлом БД:
 
 ```json
 {
-  "capabilities": {
-    "resources": {
-      "tables": "Database tables",
-      "schemas": "Database schemas"
-    },
-    "tools": {
-      "query": "Execute SQL",
-      "migrate": "Run migrations"
-    }
-  },
-  "config": {
-    "connectionString": "postgresql://...",
-    "ssl": true
+  "sqlite": {
+    "type": "local",
+    "command": [
+      "uvx",
+      "mcp-server-sqlite",
+      "--db-path",
+      "/home/max/projects/mcp-lab/data.db"
+    ],
+    "enabled": true
   }
 }
 ```
 
-**Use cases:**
-- Production databases
-- Cloud databases (Supabase, Neon, etc.)
+Для PostgreSQL — отдельный **read-only пользователь** (научимся на Дне 5), никогда не админ и не владелец схемы.
+
+### git — локальные операции
+
+Tools: `git_status`, `git_log`, `git_diff`, `git_show` — чтение. Записывающие команды (`commit`, `push`) включай только если реально нужны, и держи их за approval.
+
+### github — работа с репозиториями через API
+
+Resources: репозитории, issues, PR. Tools: создание issue/PR, поиск. Требует токен:
+
+- Используй **fine-grained PAT**: только нужные репозитории, только нужные permissions, минимальный срок действия
+- Для чтения — `public_repo`/read-only, не `repo` с полным доступом
 
 ---
 
-## File System MCP Server
+## 🚨 Supply chain: ты устанавливаешь чужой код
 
-### Capabilities:
+MCP-сервер из npm или PyPI выполняется на твоей машине с твоими правами. Правила:
 
-```json
-{
-  "resources": {
-    "files": "Read file contents",
-    "directories": "List directory contents"
-  },
-  "tools": {
-    "read_file": "Read file",
-    "write_file": "Create/update file",
-    "list_directory": "List files",
-    "search_files": "Glob search",
-    "get_file_info": "File metadata"
-  }
-}
+1. **Пинуй версию.** `npx -y pkg` без версии сегодня и завтра скачает разный код. Сначала:
+
+```bash
+npm view @modelcontextprotocol/server-filesystem version
+npm view @modelcontextprotocol/server-filesystem repository.url
+npm view @modelcontextprotocol/server-filesystem maintainers
 ```
 
-### Configuration:
+Записал версию → вписал её в конфиг (`@0.6.2`). Обновление — осознанное действие, не автопилот.
 
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "node",
-      "args": [
-        "/path/to/filesystem-server/index.js",
-        "/allowed/path/1",
-        "/allowed/path/2"
-      ]
-    }
-  }
-}
-```
+2. **Проверь, откуда пакет.** `repository.url` должен вести в тот репозиторий, который ты читал. Похожее имя (typo-squat) — классическая атака: `@modelcontextprotocol/server-fylesystem` — не наш пакет.
 
-**Security:** ИИ имеет доступ ТОЛЬКО к указанным путям.
+3. **Прочитай код.** Reference-серверы — несколько сотен строк. Просмотри, какие tool calls что делают, куда уходят данные, какие env-переменные требует. Для больших сторонних серверов — хотя бы issues, дату последнего коммита и количество сопровождающих.
+
+4. **Минимум capabilities.** Не нужен write — используй read-only конфиг. Не нужен web — не ставь web-сервер «на всякий случай».
+
+5. **Секреты — только из окружения.** Сервер, требующий ключ в конфиг-файле, который попадает в git, — кандидат на отбраковку.
 
 ---
 
-## Git & GitHub MCP
+## Матрица выбора
 
-### Git Server:
-
-```json
-{
-  "tools": {
-    "git_status": "Show working tree status",
-    "git_log": "Show commit history",
-    "git_diff": "Show changes",
-    "git_show": "Show commit details"
-  }
-}
-```
-
-### GitHub Server:
-
-```json
-{
-  "resources": {
-    "repositories": "Access repo files",
-    "issues": "Read issues",
-    "pull_requests": "Read PRs"
-  },
-  "tools": {
-    "create_issue": "Create new issue",
-    "create_pr": "Create pull request",
-    "search_code": "Search in repo",
-    "get_file_contents": "Read file from repo"
-  }
-}
-```
-
-**Auth:** Requires GitHub Personal Access Token.
+| Задача | Сервер | Минимальные права |
+|--------|--------|-------------------|
+| Локальный анализ данных | sqlite (`mcp-server-sqlite`) | копия БД, не продакшн-файл |
+| Продакшн-БД (только читать) | postgres | read-only пользователь |
+| Файлы проекта | filesystem | конкретная папка проекта |
+| Чужие репозитории | github | fine-grained PAT, read-only |
+| Локальный git | git | только читающие команды |
+| Веб-поиск | brave-search | отдельный ключ с лимитом трат |
 
 ---
 
-## Web Services MCP
+## 💡 Писать свой сервер — или нет
 
-### Brave Search:
-
-```json
-{
-  "tools": {
-    "search": "Web search",
-    "local_search": "Local business search"
-  },
-  "config": {
-    "env": {
-      "BRAVE_API_KEY": "your-key"
-    }
-  }
-}
-```
-
-### Google Maps:
-
-```json
-{
-  "tools": {
-    "geocode": "Convert address to coordinates",
-    "reverse_geocode": "Coordinates to address",
-    "search_places": "Find nearby places",
-    "get_directions": "Route planning"
-  }
-}
-```
-
----
-
-## Choosing the Right MCP Server
-
-### Decision Matrix:
-
-| Need | Recommended MCP | Why |
-|------|----------------|-----|
-| Local DB analysis | SQLite | No setup, instant |
-| Production DB | PostgreSQL | Connection pooling, SSL |
-| File operations | File System | Direct access |
-| Code from repos | GitHub | API-based, no clone |
-| Current git status | Git | Local operations |
-| Web research | Brave Search | Real-time data |
-
----
-
-## Custom MCP Server Development
-
-### When to create your own:
-
-```
-✅ Internal APIs without public MCP
-✅ Proprietary databases
-✅ Custom business logic
-✅ Integration with internal tools
-```
-
-### Quick Start (TypeScript):
-
-```typescript
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
-
-const server = new Server({
-  name: 'custom-mcp',
-  version: '1.0.0'
-}, {
-  capabilities: { tools: {} }
-});
-
-// Define tool
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [{
-    name: 'my_custom_tool',
-    description: 'Does something custom',
-    inputSchema: z.object({
-      param1: z.string()
-    }).toJSONSchema()
-  }]
-}));
-
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === 'my_custom_tool') {
-    const { param1 } = request.params.arguments;
-    // Your logic here
-    return {
-      content: [{
-        type: 'text',
-        text: `Result: ${param1}`
-      }]
-    };
-  }
-});
-
-// Start
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
----
-
-## MCP Server Quality Checklist
-
-### Before using an MCP server, check:
-
-```
-✅ Documentation: Is there a clear README?
-✅ Examples: Are there usage examples?
-✅ Tests: Does it have tests?
-✅ Maintenance: Recent commits?
-✅ Issues: Open issues count?
-✅ Stars: Community adoption?
-```
+Пиши свой, когда: внутренний API без готового MCP, проприетарная БД, специфичная бизнес-логика. Это обычная небольшая программа поверх JSON-RPC (SDK для TypeScript и Python), и к ней применимы те же правила: минимум tools, schema на каждый аргумент, никакого логирования секретов. В этой неделе мы фокусируемся на **безопасном потреблении** готовых серверов; написание своих — отдельный навык.
 
 ---
 
 ## Checklist дня ✅
 
-- [ ] Изучил официальный каталог
-- [ ] Понял capabilities разных серверов
-- [ ] Научился выбирать подходящий MCP
-- [ ] Увидел пример создания своего сервера
-- [ ] Понял критерии качества
+- [ ] Знаю 4 источника серверов и их разный уровень доверия
+- [ ] Понял настройки scope для filesystem/sqlite
+- [ ] Умею пиновать версию через `npm view`
+- [ ] Проверяю `repository.url` перед установкой
+- [ ] Понял критерии: минимум capabilities, секреты из окружения
 
 ---
+
+## 🎯 Миссия
+
+Создай `mcp-allowlist.md` в рабочей папке недели — личный allowlist из **трёх** серверов, которые ты планируешь подключить на Дне 3:
+
+```markdown
+# MCP allowlist — <проект>
+
+| Сервер | Версия (пин) | Источник (repo URL) | Capabilities | Секреты | Радиус действия |
+|--------|--------------|---------------------|--------------|---------|-----------------|
+| filesystem | 0.6.2 | github.com/... | read/write files | нет | ~/projects/mcp-lab |
+| ... | ... | ... | ... | ... | ... |
+```
+
+**Готово, когда:** у каждого сервера записана конкретная версия (не «latest»), ссылка на репозиторий, который ты открыл глазами, список секретов (или «нет»), и радиус действия. Строки вида «поставлю, потом разберусь» — не считаются.
+
+---
+
+⏭️ Что дальше: подключаем проверенные серверы к OpenCode и настраиваем approvals.
 
 📚 [На следующий день →](./Day_3.md)

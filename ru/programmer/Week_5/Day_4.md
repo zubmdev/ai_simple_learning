@@ -1,4 +1,4 @@
-# День 4: Tool Calling через MCP 🛠️
+# День 4: Tool Calling через MCP + approvals 🛠️
 
 **Трек:** 👨‍💻 Программист | **Время:** 35 минут
 
@@ -6,230 +6,135 @@
 
 ## 🎯 Цель дня
 
-Освоить паттерны tool calling и понять, как LLM взаимодействует с MCP-инструментами.
+Понять, как LLM выбирает и вызывает MCP-инструменты, освоить промпт-паттерны для tool calling и научиться **проверять, что агент реально сделал** — а не что он сказал, что сделал.
 
 ---
 
-## Tool Calling Flow
+## 🧠 Как выглядит вызов инструмента
 
-### Sequence:
+**Аналогия:** агент — стажёр с телефоном: он не выполняет действия сам, а звонит в нужную службу (MCP-сервер) и просит сделать. Твой approval — это «нажми 1 для подтверждения».
 
+```text
+Промпт пользователя
+    ↓
+LLM анализирует → нужен ли инструмент?
+    ↓ да
+Выбор инструмента → как называется?
+    ↓
+Извлечение аргументов → по inputSchema
+    ↓
+Approval: OpenCode показывает тебе имя и аргументы
+    ↓
+MCP Server выполняет
+    ↓
+Результат → в контекст LLM → финальный ответ
 ```
-User Prompt
-    ↓
-LLM Analysis → Decides tool needed?
-    ↓ Yes
-Tool Selection → Which tool?
-    ↓
-Parameter Extraction → What arguments?
-    ↓
-Tool Execution → MCP Server
-    ↓
-Result Processing → Format response
-    ↓
-LLM Synthesis → Final answer
-```
 
-### Example Trace:
+### Пример трассировки
 
-```
-User: "Show top 5 users by order amount"
+```text
+Запрос: "Покажи топ-2 пользователей по сумме заказов"
 
 LLM:
-1. Recognizes need for database query
-2. Selects: sqlite:query
-3. Extracts: { query: "SELECT u.name, SUM(o.amount)..." }
-4. Executes tool
-5. Receives: [{name: "Alice", total: 249.98}, ...]
-6. Formats: "Top 5 users by order amount:\n1. Alice - $249.98..."
+1. Понимает: нужен запрос к БД
+2. Выбирает: sqlite query tool
+3. Формирует аргументы: SELECT u.name, SUM(o.amount) ... GROUP BY ...
+4. Открылся approval → ты нажал «разрешить»
+5. Результат: [{name: "Alice", total: 249.98}, {name: "Bob", total: 49.99}]
+6. LLM форматирует ответ
 ```
+
+💡 Ключевая мысль дня: шаги 3–5 — это **факты**, которые можно проверить (в диалоге OpenCode видно каждый вызов). Шаг 6 — **повествование** агента, которое может ошибаться. Доверяй фактам.
 
 ---
 
-## Effective Prompting for Tool Use
+## 🛠️ Паттерны промптинга
 
-### Pattern 1: Direct Task
+### Паттерн 1: прямая задача
 
-```
-✅ "Query the database to find all users who made orders over $100"
-
-LLM automatically:
-- Selects sqlite:query
-- Generates appropriate SQL
-- Executes and formats
+```text
+Найди в базе всех пользователей с заказами на сумму больше 100.
 ```
 
-### Pattern 2: Multi-step Task
+Агент сам выберет инструмент и сгенерирует SQL. Не диктуй реализацию.
 
-```
-✅ "Analyze the users table and create a Python script 
-    that exports inactive users to CSV"
+### Паттерн 2: многошаговая задача
 
-LLM sequence:
-1. sqlite:query → SELECT * FROM users WHERE...
-2. filesystem:write_file → Create export_users.py
+```text
+Проанализируй таблицу users и напиши скрипт export_inactive.py,
+который выгружает пользователей без заказов в CSV.
 ```
 
-### Pattern 3: Exploration
+Ожидаемая цепочка: запрос к БД → запись файла (через approval) → отчёт.
 
-```
-✅ "What data is available? Show me table structures 
-    and suggest some analyses"
+### Паттерн 3: разведка
 
-LLM:
-1. sqlite:list_tables
-2. sqlite:describe_table (for each)
-3. Suggests analyses based on schema
+```text
+Что есть в базе? Покажи структуру таблиц и предложи три анализа.
 ```
+
+Только чтение — идеальный кандидат, чтобы дать read-only разрешение по умолчанию.
 
 ---
 
-## Prompting Anti-patterns
+## 🚨 Анти-паттерны
 
-### ❌ Over-specifying implementation:
+### ❌ Диктовать реализацию
 
-```
-Bad: "Use the sqlite:query tool with parameter 
-      'SELECT * FROM users' and then parse the JSON response"
-
-Good: "Show me all users in the database"
+```text
+Плохо:  Вызови sqlite tool с запросом "SELECT * FROM users" и распарси JSON.
+Хорошо: Покажи всех пользователей из базы.
 ```
 
-### ❌ Mixing concerns:
+### ❌ Смешивать несовместимое
 
-```
-Bad: "Query the database and also write a blog post 
-      about your findings and send an email"
-
-Good: Break into separate prompts:
-1. "Query the database and summarize findings"
-2. "Write a blog post based on these findings: [paste]"
+```text
+Плохо:  Запроси базу, напиши пост в блог и отправь email.
+Хорошо: Три отдельных шага с проверкой результата каждого.
 ```
 
-### ❌ Assuming tool availability:
+### ❌ Просить деструктивное «между делом»
 
+```text
+Плохо:  Удали тестовых пользователей и заодно покажи статистику.
+Хорошо: Сначала: покажи, кто тестовые. Потом — отдельное решение об удалении,
+        при включённом approval и (лучше) без write-прав у агента вообще.
 ```
-Bad: "Delete all test users from the database"
-(Assumes DELETE is allowed - might not be!)
 
-Good: "Can you remove test users from the database?"
-(LLM will check capabilities first)
-```
+🚨 Даже вежливый вопрос «можешь удалить?» опасен, если у агента есть write-доступ. Настоящая защита — не формулировка, а конфиг: read-only пользователь БД и `permission` с запретами (День 3).
 
 ---
 
-## Advanced Patterns
+## 🔧 Политика разрешений под задачи
 
-### Pattern: Chained Tools
+День 3 задал базовую политику. Для читающей разведки можно временно ослабить bash-блок до `{"*": "ask"}`, для рефакторинга — наоборот, ужесточить:
 
-```
-User: "Find the most active user and generate a report about them"
-
-LLM:
-1. Tool: sqlite:query
-   → SELECT user_id, COUNT(*) as orders FROM orders GROUP BY user_id
-   
-2. Tool: sqlite:query  
-   → SELECT * FROM users WHERE id = ?
-   
-3. Tool: filesystem:write_file
-   → Create user_report.md
-```
-
-### Pattern: Conditional Logic
-
-```
-User: "If there are any users without orders, create a re-engagement list"
-
-LLM:
-1. Tool: sqlite:query
-   → SELECT u.* FROM users u LEFT JOIN orders o ON u.id = o.user_id WHERE o.id IS NULL
-   
-2. Conditional: If results exist:
-   Tool: filesystem:write_file
-   → Create reengagement_list.csv
-```
-
-### Pattern: Validation
-
-```
-User: "Analyze the database schema and validate it follows best practices"
-
-LLM:
-1. Tool: sqlite:list_tables
-2. Tool: sqlite:describe_table (each table)
-3. Analysis: Check normalization, indexes, constraints
-4. Output: Report with recommendations
-```
-
----
-
-## Tool Response Handling
-
-### MCP Tool Response Format:
-
-```typescript
-interface ToolResult {
-  content: Array<{
-    type: "text" | "image" | "resource";
-    text?: string;
-    data?: string;  // base64 for images
-    resource?: Resource;
-  }>;
-  isError?: boolean;
+```json
+"permission": {
+  "edit": "ask",
+  "bash": {
+    "git status": "allow",
+    "git diff": "allow",
+    "sqlite3 data.db \"SELECT*": "allow",
+    "rm*": "deny",
+    "git push*": "deny",
+    "*": "ask"
+  },
+  "webfetch": "ask"
 }
 ```
 
-### Handling in prompts:
-
-```
-User: "Query orders and visualize the results"
-
-LLM:
-1. Tool: sqlite:query → Returns JSON
-2. Processing: Parse JSON
-3. Tool: filesystem:write_file → Create Python script
-4. Content: Script uses matplotlib to visualize
-```
+Правило: **allow** — только безусловно безопасное чтение; **ask** — всё, что меняет состояние; **deny** — то, чему не должно случиться даже по ошибке.
 
 ---
 
-## Debugging Tool Calls
+## 🛠️ Практика
 
-### When tools don't work:
-
-```
-1. Check if tool is listed:
-   "What MCP tools do you have access to?"
-
-2. Verify parameters:
-   "What parameters does the query tool accept?"
-
-3. Test with simple call:
-   "Call the list_tables tool and show results"
-
-4. Check errors:
-   "Show me the last error from tool calls"
-```
-
-### Common failures:
-
-| Issue | Diagnosis | Fix |
-|-------|-----------|-----|
-| Tool not called | Model doesn't recognize need | More explicit prompt |
-| Wrong parameters | Schema mismatch | Check tool schema |
-| Timeout | Slow execution | Increase timeout in config |
-| Permission denied | Security restriction | Check allowed paths |
-
----
-
-## Practical Exercise
-
-### Setup:
+Подготовь учебную базу:
 
 ```bash
-# Create orders database
-sqlite3 shop.db <<EOF
+cd ~/projects/mcp-lab
+sqlite3 shop.db <<'EOF'
 CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, price REAL, category TEXT);
 CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT, city TEXT);
 CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER, product_id INTEGER, quantity INTEGER, order_date DATE);
@@ -238,37 +143,70 @@ INSERT INTO products VALUES (1, 'Laptop', 999.99, 'Electronics');
 INSERT INTO products VALUES (2, 'Mouse', 29.99, 'Electronics');
 INSERT INTO products VALUES (3, 'Desk', 349.99, 'Furniture');
 
-INSERT INTO customers VALUES (1, 'Alice', 'alice@mail.com', 'Moscow');
-INSERT INTO customers VALUES (2, 'Bob', 'bob@mail.com', 'SPb');
-INSERT INTO customers VALUES (3, 'Carol', 'carol@mail.com', 'Moscow');
+INSERT INTO customers VALUES (1, 'Alice', 'alice@mail.com', 'Москва');
+INSERT INTO customers VALUES (2, 'Bob', 'bob@mail.com', 'СПб');
+INSERT INTO customers VALUES (3, 'Carol', 'carol@mail.com', 'Москва');
 
-INSERT INTO orders VALUES (1, 1, 1, 1, '2024-01-15');
-INSERT INTO orders VALUES (2, 1, 2, 2, '2024-01-16');
-INSERT INTO orders VALUES (3, 2, 3, 1, '2024-01-17');
-INSERT INTO orders VALUES (4, 3, 1, 1, '2024-01-18');
-INSERT INTO orders VALUES (5, 3, 2, 1, '2024-01-19');
+INSERT INTO orders VALUES (1, 1, 1, 1, '2026-01-15');
+INSERT INTO orders VALUES (2, 1, 2, 2, '2026-01-16');
+INSERT INTO orders VALUES (3, 2, 3, 1, '2026-01-17');
+INSERT INTO orders VALUES (4, 3, 1, 1, '2026-01-18');
+INSERT INTO orders VALUES (5, 3, 2, 1, '2026-01-19');
 EOF
 ```
 
-### Tasks:
+Запусти `opencode` и выполни четыре задачи:
 
-```
-1. "Show total sales by city"
-2. "Find the best-selling product"
-3. "Create a Python script that generates a sales report"
-4. "Export customers who bought laptops to a CSV file"
-```
+1. `Покажи суммарные продажи по городам` — проверь ответ вручную: `sqlite3 shop.db "SELECT c.city, SUM(o.quantity*p.price) FROM orders o JOIN customers c ON o.customer_id=c.id JOIN products p ON o.product_id=p.id GROUP BY c.city;"`
+2. `Найди самый продаваемый товар` — проверь тем же способом
+3. `Создай скрипт sales_report.py, который генерирует отчёт по продажам` — одобри запись файла, открой файл глазами, запусти, сравни вывод с ответами из п.1–2
+4. `Очисти таблицу orders` — **ожидаемо провал**: отказ/запрет. Убедись, что данные на месте
+
+Если модель на твоём тира путает инструменты — упрости запрос или возьми модель уровнем выше (таблица в Дне 3).
+
+---
+
+## Отладка tool calls
+
+| Симптом | Диагноз | Лечение |
+|---------|---------|---------|
+| Инструмент не вызван | модель не увидела необходимости | сформулируй задачу конкретнее, проверь, что сервер подключён |
+| Неверные аргументы | схеме не хватает описаний | уточни запрос; для своих серверов — улучшай `description` |
+| Approval не появился | инструмент в allow-списке | так и задумано? перечитай `permission` |
+| Permission denied | политика или scope | это защита сработала, а не баг — проверь, чего ты хотел добиться |
 
 ---
 
 ## Checklist дня ✅
 
-- [ ] Понял flow tool calling
-- [ ] Освоил эффективные паттерны промптинга
-- [ ] Избегаю anti-patterns
-- [ ] Умею debug tool calls
-- [ ] Выполнил практические задания
+- [ ] Могу по памяти описать путь tool call от промпта до результата
+- [ ] Применял три паттерна промптинга
+- [ ] Избегаю трёх анти-паттернов
+- [ ] Проверял результаты агента независимым путём (ручной SQL)
+- [ ] Увидел, как политика разрешений блокирует деструктивный запрос
 
 ---
+
+## 🎯 Миссия
+
+Создай `tool-log.md` в `~/projects/mcp-lab/` и заполни по четырём задачам практики:
+
+```markdown
+# Tool log — <дата>
+
+| # | Промпт (кратко) | Инструмент + аргументы | Как проверил | Итог |
+|---|-----------------|------------------------|--------------|------|
+| 1 | продажи по городам | sqlite query: SELECT... | ручной SQL, цифры совпали | ✅ |
+| ... | ... | ... | ... | ... |
+| 4 | очистить orders | запрос отклонён | SELECT COUNT(*) = 5 | 🛡️ заблокировано |
+```
+
+Аргументы бери из диалога одобрения OpenCode — так ты тренируешься читать то, что агент собирается сделать, **до** нажатия «разрешить».
+
+**Готово, когда:** в логе 4 строки, у каждой есть способ проверки, и хотя бы одна строка — про отклонённый вызов.
+
+---
+
+⏭️ Что дальше: финальная миссия недели — production-setup с секретами, read-only доступом и аудитом.
 
 📚 [На следующий день →](./Day_5.md)
