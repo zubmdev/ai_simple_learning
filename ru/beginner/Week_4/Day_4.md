@@ -1,4 +1,4 @@
-# День 4: Создаём свои Rules для проекта ⚙️
+# День 4: Делегирование — подзадачи и проверка каждой 🚀
 
 **Трек:** 🌱 Начинающий | **Время:** 45 минут
 
@@ -6,330 +6,176 @@
 
 ## 🎯 Цель дня
 
-Создать персонализированные Rules для конкретного проекта.
+Научиться разбивать большую задачу на подзадачи, делегировать их агенту по одной и проверять каждую до перехода к следующей.
 
 ---
 
-## Часть 1: Анализ проекта
+## Часть 1: Проблема — «сделай всё сразу» ломается
 
-### Прежде чем создавать Rules
+### Ситуация
 
-Ответь на вопросы:
-
-```
-1. Какой язык программирования?
-2. Какой фреймворк?
-3. Какой стиль кода?
-4. Какая структура проекта?
-5. Какие библиотеки используешь?
-6. Какие есть conventions?
+```text
+Ты: "Добавь систему тегов: модель, фильтр, справку, тесты."
+Агент: *меняет 6 файлов, ломает list, забывает справку*
+Ты: *час разбираешься, что именно сломалось*
 ```
 
-### Пример анализа
+Одна большая делегация — это один большой риск. Ошибка на шаге 2 остаётся незамеченной и портит шаги 3, 4 и 5.
 
-```
-Проект: E-commerce API
+### Решение: цикл делегирования
 
-Язык: Python 3.11
-Фреймворк: FastAPI
-База данных: PostgreSQL + SQLAlchemy
-Стили:
-- Type hints везде
-- Async/await
-- Pydantic schemas
-- Google docstrings
-Структура:
-- api/ — endpoints
-- models/ — SQLAlchemy models
-- schemas/ — Pydantic schemas
-- services/ — business logic
-- utils/ — helpers
+```text
+План → Подзадача 1 → Проверка 1
+     → Подзадача 2 → Проверка 2
+     → ...
+     → Финальная проверка
+
+Правило: не принимай следующую подзадачу,
+пока не проверена предыдущая.
 ```
 
 ---
 
-## Часть 2: Шаблон Rules для проекта
+## Часть 2: Аналогия — прораб на стройке
 
-### Базовый шаблон
+```text
+Прораб не говорит бригаде: "Постройте дом".
+Он делит работу: фундамент → стены → крыша.
+Каждый этап он принимает лично: трещин нет? идём дальше.
 
-```json
-{
-  "rules": [
-    {
-      "name": "Project Context",
-      "rule": "This is a FastAPI e-commerce API project. Structure: api/, models/, schemas/, services/, utils/. Use PostgreSQL with SQLAlchemy."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Python 3.11+. Use type hints everywhere. Use async/await. Use Pydantic v2 for schemas. Use Google-style docstrings."
-    },
-    {
-      "name": "API Endpoints",
-      "rule": "Create endpoints in api/ folder. Use APIRouter. Include response_model. Add proper HTTP status codes. Use dependency injection."
-    },
-    {
-      "name": "Database",
-      "rule": "Use SQLAlchemy async. Create models in models/ folder. Use Alembic for migrations. Use relationship() for foreign keys."
-    },
-    {
-      "name": "Response Format",
-      "rule": "Be concise. Show code first. Use bullet points for lists. Maximum 3 sentences explanation. Respond in Russian."
-    }
-  ]
-}
+Ты — прораб. Агент — бригада.
+Хорошая бригада с плохим прорабом строит кривой дом.
 ```
+
+💡 В Cline для этого есть режимы Plan и Act: в Plan агент сначала составляет план и не трогает код, в Act — выполняет. В OpenCode то же самое умеют субагенты — исполнитель на подзадачу. Но главный навык не в кнопке, а в дисциплине: план → одна подзадача → проверка. Он работает в любом агенте.
 
 ---
 
-## Часть 3: Практика — создаём Rules
+## Часть 3: Практика — делегируем систему тегов
 
-### Упражнение 1: Rules для Flask проекта
+### 🛠️ Уровни доступа
 
-```json
-{
-  "rules": [
-    {
-      "name": "Flask Setup",
-      "rule": "Use Flask 3.0+. Use Blueprints for routes. Use Flask-SQLAlchemy for database. Use Flask-Migrate for migrations."
-    },
-    {
-      "name": "Project Structure",
-      "rule": "app/__init__.py for factory. app/routes/ for blueprints. app/models/ for SQLAlchemy models. app/templates/ for Jinja2. app/static/ for CSS/JS."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Use type hints. Use f-strings. Keep routes under 20 lines. Use services for business logic. Don't repeat yourself."
-    }
-  ]
-}
+| Уровень | Железо / доступ | Модель |
+|---------|------------------|--------|
+| 1 | CPU + бесплатный API (Groq) | `openai/gpt-oss-20b` |
+| 2 | 4GB GPU + Ollama | `qwen3.5:2b` |
+| 3 | 16GB GPU + Ollama | `gpt-oss:20b` |
+
+*Проверено: 2026-10-24*
+
+**Шаг 1: Получи план, а не код.** В проекте todo-cli (со вчерашними плейбуком и заметками) открой чат и напиши:
+
+```text
+Не пиши код. Прочитай todo.py и docs/decisions.md.
+Мы хотим добавить теги к задачам: у задачи может быть
+несколько тегов, список с фильтром по тегу.
+Разбей задачу на подзадачи по 1 файлу и не больше 30 минут
+каждая. Для каждой подзадачи предложи, как её проверить.
+Выведи план списком.
 ```
 
-### Упражнение 2: Rules для React проекта
+**Шаг 2: Утверди план.** Ожидаешь примерно такой список — сверь со своим:
 
-```json
-{
-  "rules": [
-    {
-      "name": "React Setup",
-      "rule": "Use React 18+ with hooks. Use TypeScript. Use functional components only. Use Tailwind CSS for styling."
-    },
-    {
-      "name": "Project Structure",
-      "rule": "src/components/ for reusable components. src/pages/ for page components. src/hooks/ for custom hooks. src/utils/ for helpers. src/types/ for TypeScript types."
-    },
-    {
-      "name": "Component Style",
-      "rule": "Use arrow functions for components. Use destructuring for props. Use named exports. Keep components under 100 lines. Extract complex logic to hooks."
-    },
-    {
-      "name": "State Management",
-      "rule": "Use useState for local state. Use useContext for global state. Use React Query for server state. Use URL state for filters/pagination."
-    }
-  ]
-}
+```text
+1. Хранение: добавить поле tags (список) в запись задачи
+   Проверка: python todo.py, add с тегом, файл todos/*.json изменился
+2. add: формат "add текст #тег1 #тег2"
+   Проверка: python todo.py, add "Buy milk #shopping"
+3. list: фильтр "list #тег" и показ тегов в выводе
+   Проверка: python todo.py, list #shopping
+4. Справка: обновить строку Commands
+   Проверка: запуск, справка показывает новые форматы
 ```
 
-### Упражнение 3: Rules для Django проекта
+Если агент предложил 8 мелких шагов — попроси укрупнить. Если 2 огромных — разбить. Каждый шаг должен быть проверяемым одной командой.
 
-```json
-{
-  "rules": [
-    {
-      "name": "Django Setup",
-      "rule": "Use Django 5.0+. Use Django REST Framework for APIs. Use PostgreSQL. Use Celery for async tasks."
-    },
-    {
-      "name": "Project Structure",
-      "rule": "apps/ for Django apps. core/ for shared utilities. config/ for settings. Each app has: models.py, views.py, serializers.py, urls.py, tests.py."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Follow Django naming conventions. Use class-based views. Use serializers for validation. Use select_related/prefetch_related for queries."
-    },
-    {
-      "name": "Testing",
-      "rule": "Use pytest-django. Use factory_boy for test data. Aim for 90% coverage. Test views, models, and serializers separately."
-    }
-  ]
-}
+**Шаг 3: Делегируй подзадачу 1.**
+
+```text
+План утверждён. Выполни только подзадачу 1.
+Больше ничего не меняй. После изменения запусти проверку
+из плана и покажи вывод.
 ```
+
+Перед принятием дифа посмотри изменения: только `todo.py` (или файл данных), ничего лишнего.
+
+**Шаг 4: Проверь и зафиксируй.**
+
+```bash
+python todo.py
+```
+
+Добавь задачу с тегом, посмотри JSON-файл. Работает — делай коммит:
+
+```bash
+git add -A
+git commit -m "Tags: storage layer"
+```
+
+Сломалось — не переходи к шагу 2 плана. Верни агенту вывод ошибки:
+
+```text
+Проверка не прошла:
+[вставь вывод ошибки]
+Исправь в рамках подзадачи 1, ничего нового не добавляя.
+```
+
+**Шаг 5: Повтори цикл** для подзадач 2, 3, 4: делегация → диф → проверка → коммит. После последней — финальный прогон всех сценариев разом: `add` с двумя тегами, `list` без фильтра, `list #тег`.
 
 ---
 
-## Часть 4: Продвинутые Rules
+## Часть 4: Одна делегация против четырёх
 
-### Rule: Автоматические импорты
+| | «Сделай всё сразу» | Цикл делегирования |
+|--|--------------------|--------------------|
+| Размер дифа | 6 файлов за раз | 1 подзадача |
+| Где ловится ошибка | На финальном прогоне | Сразу, на своей проверке |
+| Откат | Откатывать всё | Откатить один коммит |
+| Понимание | «Магия сломалась» | Ты знаешь, какой шаг упал |
 
-```json
-{
-  "name": "Auto Imports",
-  "rule": "Always include necessary imports in code snippets. For FastAPI: from fastapi import FastAPI, APIRouter, Depends, HTTPException. For Pydantic: from pydantic import BaseModel. For SQLAlchemy: from sqlalchemy import Column, Integer, String, ForeignKey."
-}
-```
-
-### Rule: Обработка ошибок
-
-```json
-{
-  "name": "Error Handling",
-  "rule": "Always include try/except for database operations. Use HTTPException for API errors. Log errors with structlog. Return proper HTTP status codes: 400 for bad request, 404 for not found, 500 for server error."
-}
-```
-
-### Rule: Тесты
-
-```json
-{
-  "name": "Testing Requirements",
-  "rule": "Always write pytest tests for new code. Include test for happy path. Include test for edge cases. Include test for error cases. Use fixtures for setup. Use parameterize for multiple cases."
-}
-```
-
-### Rule: Документация
-
-```json
-{
-  "name": "Documentation",
-  "rule": "Add docstrings to all public functions. Use Google format. Include Args, Returns, Raises, Examples. Update README.md for new features. Add type hints for all parameters."
-}
-```
+🚨 Красный флаг: агент сам начинает выполнять подзадачу 3, «пока уж сделал». Останови: «Выполняй только текущую подзадачу плана». Разрешения о том, кто и что может делать без спроса, — завтрашняя тема.
 
 ---
 
-## Часть 5: Практика — полный пример
+## Часть 5: Как понять, что цикл работает
 
-### Задача
-
-Создай Rules для проекта блога на FastAPI.
-
-### Решение
-
-```json
-{
-  "rules": [
-    {
-      "name": "Project Context",
-      "rule": "Blog API on FastAPI. PostgreSQL database. JWT authentication. RESTful API. Features: posts, comments, users, tags, categories."
-    },
-    {
-      "name": "Tech Stack",
-      "rule": "Python 3.11, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, pytest, JWT (python-jose), password hashing (passlib)."
-    },
-    {
-      "name": "Project Structure",
-      "rule": "app/main.py - entry point. app/api/ - routers. app/models/ - SQLAlchemy models. app/schemas/ - Pydantic schemas. app/services/ - business logic. app/core/ - config, security. app/db/ - database session."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Use type hints everywhere. Use async/await for database. Use dependency injection. Use Pydantic for validation. Follow PEP 8. Use meaningful names."
-    },
-    {
-      "name": "API Design",
-      "rule": "RESTful conventions: GET /posts, POST /posts, GET /posts/{id}, PUT /posts/{id}, DELETE /posts/{id}. Use HTTP status codes correctly. Include pagination for lists. Include filtering and sorting."
-    },
-    {
-      "name": "Security",
-      "rule": "JWT for authentication. Hash passwords with bcrypt. Validate all inputs. Use environment variables for secrets. SQL injection prevention with SQLAlchemy."
-    },
-    {
-      "name": "Response Format",
-      "rule": "Be concise. Show code first, then brief explanation. Maximum 3 sentences. Use Russian language. Use bullet points for lists."
-    }
-  ]
-}
-```
-
----
-
-## Часть 6: Тестирование Rules
-
-### Как проверить, что Rules работают
-
-**Тест 1: Простой запрос**
-
-```
-Напиши модель Post для блога.
-```
-
-**Ожидаемый результат:**
-- SQLAlchemy async модель
-- Type hints
-- Поля: id, title, content, author_id, created_at
-- Правильные импорты
-
-**Тест 2: Создание endpoint**
-
-```
-Создай endpoint для получения списка постов.
-```
-
-**Ожидаемый результат:**
-- FastAPI router
-- async функция
-- Pagination
-- Pydantic response model
-- Краткое объяснение на русском
-
-**Тест 3: Сложная логика**
-
-```
-Добавь функционал: пользователь может лайкнуть пост.
-```
-
-**Ожидаемый результат:**
-- Новая модель Like
-- Endpoint для лайка
-- Проверка авторизации
-- Обработка ошибок
-
----
-
-## Часть 7: Типичные ошибки
-
-### ❌ Ошибка 1: Слишком много Rules
-
-```
-❌ 50+ Rules → ИИ путается
-✅ 5-10 Rules → ИИ следует чётко
-```
-
-### ❌ Ошибка 2: Противоречивые Rules
-
-```
-❌ Rule 1: "Use sync functions"
-   Rule 2: "Always use async/await"
-   
-✅ Убедись, что Rules не противоречат друг другу
-```
-
-### ❌ Ошибка 3: Слишком общие Rules
-
-```
-❌ "Write good code"
-✅ "Use type hints, async/await, and handle errors"
+```text
+✅ План существует и сохранён, у каждой подзадачи есть проверка
+✅ Диф каждой подзадачи просмотрен до принятия
+✅ Каждый коммит = одна проверенная подзадача
+✅ Финальный прогон: все сценарии работают
+✅ Если откатить последний коммит — проект остаётся рабочим
 ```
 
 ---
 
 ## Checklist дня ✅
 
-- [ ] Проанализировал свой проект
-- [ ] Создал базовый шаблон Rules
-- [ ] Создал Rules для конкретного стека
-- [ ] Добавил продвинутые Rules
-- [ ] Протестировал Rules с разными промптами
-- [ ] Убедился, что ИИ следует Rules
+- [ ] Получил план от агента без кода
+- [ ] Укрупнил или разбил шаги плана до проверяемых
+- [ ] Выполнил минимум 3 подзадачи циклом «делегация → диф → проверка → коммит»
+- [ ] Ни разу не принял подзадачу без проверки
+- [ ] Финальный прогон прошёл по всем сценариям
 
 ---
 
 ## Что дальше?
 
-**Завтра (День 5):** Daily Mission! Настроим Rules для реального проекта и протестируем с @Codebase.
+**Завтра (День 5):** ты видел, как агент лезет делать больше, чем разрешено. Научим обвязку стоп-крану: разрешения и подтверждения для опасных действий. И соберём всю неделю в одну миссию.
 
-**Домашнее задание:**
-- Создай полный набор Rules для своего проекта
-- Протестируй 5 разных промптов
-- Запиши, что изменилось в ответах ИИ
+---
+
+## 🎯 Миссия дня
+
+**Артефакт:** сохранённый план `docs/plans/tags.md` + история коммитов, где каждый коммит — одна проверенная подзадача.
+
+```text
+1. Согласуй план с агентом и сохрани его в docs/plans/tags.md.
+2. Выполни план циклом: делегация → проверка → коммит.
+3. Сделай финальный прогон: add с тегами + list #тег.
+```
+
+Проверка: `git log --oneline` показывает отдельные коммиты по подзадачам; `python todo.py` → `list #shopping` выводит только задачи с этим тегом.
 
 ---
 

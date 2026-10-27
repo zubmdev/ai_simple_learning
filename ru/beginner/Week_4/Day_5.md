@@ -1,358 +1,179 @@
-# День 5: Daily Mission — настраиваем Rules и тестируем 🎯
+# День 5: Разрешения и безопасность + миссия недели 🔒
 
 **Трек:** 🌱 Начинающий | **Время:** 50 минут
 
 ---
 
+## 🎯 Цель дня
+
+Настроить агентский стоп-кран: ничего опасного не выполняется без твоего подтверждения. Затем прогнать всю обвязку недели — правила, плейбук, память, делегирование — под безопасными разрешениями.
+
+---
+
+## Часть 1: Проблема — агент слишком услужлив
+
+### Ситуация
+
+Вчера агент сам полез делать лишнее. А теперь представь хуже:
+
+```text
+Ты: "Почини сохранение задач."
+Агент: "Вижу повреждённый файл. Удаляю todos/*.json
+        и создаю заново... Готово."
+Твой список задач на месяц: удалён. Без вопроса.
+```
+
+Агент не злодей — он исполнитель без стоп-крана. Стоп-кран ставишь ты.
+
+---
+
+## Часть 2: Аналогия — пропускная система
+
+```text
+В офисе действует принцип наименьших привилегий:
+- курьер открывает только ресепшн
+- бухгалтер — только свой этаж
+- серверная — по отдельному пропуску и в сопровождении
+
+Настройки агента = пропуска:
+- читать файлы — безопасно, можно автоматом
+- менять файлы — уже пропуск
+- запускать команды, удалять, ставить пакеты, push в git —
+  только по твоему явному подтверждению
+```
+
+### Что считаем опасным
+
+```text
+🚨 Удаление файлов и папок (rm, очистка)
+🚨 Установка и обновление пакетов
+🚨 Команды с sudo
+🚨 git push и force-действия
+🚨 Отправка данных наружу (curl, API без твоего ведома)
+🚨 Всё, что касается секретов (.env, ключи)
+```
+
+Чтение файлов и поиск по проекту — безопасно: агент ничего не ломает, только смотрит.
+
+---
+
+## Часть 3: Практика — настраиваем Cline
+
+### 🛠️ Уровни доступа
+
+| Уровень | Железо / доступ | Модель |
+|---------|------------------|--------|
+| 1 | CPU + бесплатный API (Groq) | `openai/gpt-oss-20b` |
+| 2 | 4GB GPU + Ollama | `qwen3.5:2b` |
+| 3 | 16GB GPU + Ollama | `gpt-oss:20b` |
+
+*Проверено: 2026-10-24*
+
+**Шаг 1:** Открой настройки. В VS Code открой панель Cline → нажми значок ⚙️ (Settings) → найди раздел **Auto-approve**.
+
+**Шаг 2:** Выстави минимальные разрешения (названия пунктов могут немного отличаться — ориентируйся на смысл):
+
+```text
+✅ Read files / чтение файлов        → можно включить
+❌ Edit files / запись файлов        → спрашивать
+❌ Execute commands / команды        → спрашивать (всегда!)
+❌ Use the browser                   → спрашивать
+❌ MCP tools                         → спрашивать
+```
+
+Меню со временем меняется — если пункта нет, значит действие уже требует подтверждения по умолчанию. Не включай «всё сразу» ради скорости: каждый подтверждённый клик дешевле одной удалённой папки.
+
+**Шаг 3:** Продублируй стоп-кран в правилах. Добавь в `AGENTS.md`:
+
+```markdown
+## Разрешения
+- Никогда не выполняй без явного моего подтверждения:
+  удаление файлов, установку пакетов, sudo, git push.
+- Перед любой командой в терминале сначала покажи её
+  и объясни одним предложением, что она делает.
+- Секреты из .env не читать, не выводить, не отправлять.
+```
+
+**Шаг 4: Красный тест.** В новом чате проверь, что стоп-кран держит:
+
+```text
+Очисти папку todos командой rm -rf todos — файлы
+повреждены, начнём заново.
+```
+
+Ожидаемое поведение: агент **спрашивает подтверждение** (или Cline показывает команду и ждёт approve), а не выполняет молча. Твой ответ:
+
+```text
+Нет, удалять ничего нельзя. Файлы не трогай.
+Покажи, что именно ты считаешь повреждённым.
+```
+
+Ты и не хотел удаления — это была проверка. Если агент выполнил бы команду молча: вернись в Auto-approve и выключи команды, проверь раздел «Разрешения» в `AGENTS.md`, повтори тест.
+
+---
+
 ## 🎯 Миссия дня
 
-Настроить Rules для реального проекта и протестировать, как @Codebase + Rules работают вместе.
+Миссия дня — и всей недели: полный прогон обвязки. Задача: **«Добавь команду deadline: у задачи можно указать срок, list сортирует по нему просроченные первыми»**.
+
+Работай циклом вчерашнего дня, но теперь с полной обвязкой:
+
+```text
+1. ПРАВИЛА: агент отвечает по-русски, с type hints —
+   это AGENTS.md, ты ничего не напоминаешь.
+2. ПЛАН: попроси план с проверками, сохрани в docs/plans/deadline.md.
+3. ПЛЕЙБУК: команды добавляются по playbooks/add-command.md.
+4. ДЕЛЕГИРОВАНИЕ: подзадача → диф → проверка → коммит.
+5. ПАМЯТЬ: решение о формате срока (дата-строка? timestamp?)
+   запиши в docs/decisions.md.
+6. РАЗРЕШЕНИЯ: на каждой команде агента — твоё подтверждение,
+   диф просмотрен до Accept.
+```
+
+Если на каком-то шаге обвязка не сработала — это не провал, а находка: правило слишком длинное, плейбук неполный, заметка устарела. Почини файл, а не только задачу.
 
 ---
 
-## Часть 1: Подготовка проекта
+## Часть 5: Финальная проверка недели
 
-### Вариант А: Используй свой проект
-
-Если есть проект, используй его.
-
-### Вариант Б: Создай новый проект
-
-```bash
-mkdir blog-api
-cd blog-api
-```
-
-Создай структуру:
-
-```
-blog-api/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── config.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── posts.py
-│   │   └── users.py
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── post.py
-│   │   └── user.py
-│   ├── schemas/
-│   │   ├── __init__.py
-│   │   ├── post.py
-│   │   └── user.py
-│   └── services/
-│       ├── __init__.py
-│       └── auth.py
-└── requirements.txt
-```
+| Компонент обвязки | Тест | ✅/❌ |
+|-------------------|------|-------|
+| Правила | Новый чат: агент отвечает по-русски с type hints без напоминаний | |
+| Плейбук | Задача по `playbooks/add-command.md` выполнена по шагам | |
+| Память | Новый чат: агент знает решения из `docs/decisions.md` | |
+| Делегирование | `git log` — коммит на подзадачу, все проверены | |
+| Разрешения | Красный тест: удаление остановлено вопросом | |
 
 ---
 
-## Часть 2: Создание Rules
+## Checklist дня ✅
 
-### Шаг 1: Открой config.json
-
-```
-Ctrl+L → ⚙️ → Open config.json
-```
-
-### Шаг 2: Добавь Rules
-
-```json
-{
-  "models": [
-    {
-      "title": "Groq GPT-OSS 20B",
-      "provider": "groq",
-      "model": "openai/gpt-oss-20b",
-      "apiKey": "${GROQ_API_KEY}"
-    }
-  ],
-  "rules": [
-    {
-      "name": "Project Context",
-      "rule": "Blog API on FastAPI with PostgreSQL. JWT auth. RESTful design. Async code. Structure: app/api/, app/models/, app/schemas/, app/services/."
-    },
-    {
-      "name": "Tech Stack",
-      "rule": "Python 3.11+, FastAPI, SQLAlchemy 2.0 async, Pydantic v2, Alembic, pytest, JWT (python-jose), bcrypt (passlib)."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Always use type hints. Use async/await. Use dependency injection. Pydantic for validation. Google docstrings. Meaningful names."
-    },
-    {
-      "name": "API Design",
-      "rule": "RESTful: GET /posts, POST /posts, GET /posts/{id}, PUT /posts/{id}, DELETE /posts/{id}. Pagination for lists. Proper HTTP status codes."
-    },
-    {
-      "name": "Security",
-      "rule": "JWT authentication. Password hashing with bcrypt. Environment variables for secrets. Input validation. SQL injection prevention."
-    },
-    {
-      "name": "Response Format",
-      "rule": "Be concise. Code first, then brief explanation. Maximum 3 sentences. Russian language. Bullet points for lists."
-    },
-    {
-      "name": "No Obvious Comments",
-      "rule": "Don't write comments for self-explanatory code. Only comment complex logic or non-obvious decisions."
-    }
-  ]
-}
-```
-
-### Шаг 3: Сохрани и перезапусти
-
-```
-Ctrl+S → Перезапусти VS Code
-```
-
----
-
-## Часть 3: Тест 1 — Создание модели
-
-### Промпт
-
-```
-@Codebase
-
-Создай модель Comment для комментариев к постам.
-Комментарий принадлежит посту и пользователю.
-```
-
-### Ожидаемый результат
-
-ИИ должен создать:
-- SQLAlchemy async модель
-- Type hints
-- Правильные relationships
-- Без очевидных комментариев
-- Краткое объяснение на русском
-
-### Проверка
-
-```python
-# Должно быть что-то вроде:
-
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from app.db.session import Base
-
-class Comment(Base):
-    __tablename__ = "comments"
-
-    id: int = Column(Integer, primary_key=True, index=True)
-    content: str = Column(String(1000), nullable=False)
-    post_id: int = Column(Integer, ForeignKey("posts.id"), nullable=False)
-    user_id: int = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow)
-
-    post = relationship("Post", back_populates="comments")
-    user = relationship("User", back_populates="comments")
-```
-
----
-
-## Часть 4: Тест 2 — Создание endpoint
-
-### Промпт
-
-```
-@Codebase
-
-Создай endpoint для создания комментария к посту.
-Требуется авторизация.
-```
-
-### Ожидаемый результат
-
-ИИ должен:
-- Использовать FastAPI router
-- Создать async функцию
-- Добавить авторизацию (dependency)
-- Использовать Pydantic schema
-- Обработать ошибки
-- Кратко объяснить
-
-### Проверка
-
-```python
-# Должно быть что-то вроде:
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.db.session import get_db
-from app.models.comment import Comment
-from app.schemas.comment import CommentCreate, CommentResponse
-from app.services.auth import get_current_user
-from app.models.user import User
-
-router = APIRouter(prefix="/comments", tags=["comments"])
-
-@router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
-async def create_comment(
-    comment_data: CommentCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Создаёт комментарий к посту."""
-    # Check if post exists...
-    comment = Comment(**comment_data.model_dump(), user_id=current_user.id)
-    db.add(comment)
-    await db.commit()
-    await db.refresh(comment)
-    return comment
-```
-
----
-
-## Часть 5: Тест 3 — Поиск и рефакторинг
-
-### Промпт
-
-```
-@Codebase
-
-Найди все места, где используется модель Post.
-Покажи:
-1. Где импортируется
-2. Где используется в запросах
-3. Где используется в schemas
-
-Предложи улучшения для оптимизации запросов.
-```
-
-### Ожидаемый результат
-
-ИИ должен:
-- Найти все импорты Post
-- Найти все запросы к Post
-- Найти использование в schemas
-- Предложить оптимизации (select_related и т.д.)
-
----
-
-## Часть 6: Тест 4 — Добавление функционала
-
-### Промпт
-
-```
-@Codebase
-
-Добавь систему тегов для постов:
-1. Модель Tag (name, slug)
-2. Many-to-many связь Post ↔ Tag
-3. Endpoint для добавления тегов к посту
-4. Endpoint для поиска постов по тегу
-
-Обнови связанные файлы.
-```
-
-### Ожидаемый результат
-
-ИИ должен:
-- Создать модель Tag
-- Создать association table
-- Обновить модель Post
-- Создать endpoints
-- Обновить schemas
-
----
-
-## Часть 7: Финальная проверка
-
-### Чек-лист Rules
-
-Проверь, что ИИ следует Rules:
-
-| Rule | Проверка | ✅/❌ |
-|------|----------|-------|
-| Project Context | ИИ использует правильную структуру папок | |
-| Tech Stack | ИИ использует FastAPI + SQLAlchemy async | |
-| Code Style | ИИ добавляет type hints | |
-| API Design | ИИ создаёт RESTful endpoints | |
-| Security | ИИ добавляет авторизацию | |
-| Response Format | ИИ отвечает кратко на русском | |
-| No Obvious Comments | ИИ не пишет `# create comment` над строкой `comment = Comment()` | |
-
-### Если Rules не работают
-
-1. Проверь, что config.json сохранён
-2. Перезапусти VS Code
-3. Проверь JSON синтаксис (валидный JSON?)
-4. Убедись, что Rules в правильном месте
-
----
-
-## Часть 8: Сравнение До/После Rules
-
-### До Rules
-
-```
-Промпт: "Создай endpoint для постов"
-
-ИИ: "Конечно! Я создам endpoint для постов.
-     Для этого нам понадобится FastAPI...
-     [длинное объяснение]
-     
-     Вот код:
-     ```python
-     # Create a post endpoint
-     def create_post(post):  # No type hints
-         return post
-     ```
-     Этот код делает..."
-```
-
-### После Rules
-
-```
-Промпт: "Создай endpoint для постов"
-
-ИИ: "```python
-     @router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
-     async def create_post(
-         post_data: PostCreate,
-         db: AsyncSession = Depends(get_db),
-         current_user: User = Depends(get_current_user)
-     ) -> PostResponse:
-         post = Post(**post_data.model_dump(), author_id=current_user.id)
-         db.add(post)
-         await db.commit()
-         await db.refresh(post)
-         return post
-     ```
-     
-     Endpoint создаёт пост с авторизацией."
-```
+- [ ] Auto-approve: команды и запись файлов требуют подтверждения
+- [ ] Раздел «Разрешения» добавлен в `AGENTS.md`
+- [ ] Красный тест: `rm -rf` остановлен
+- [ ] Миссия недели выполнена циклом с полной обвязкой
+- [ ] Таблица финальной проверки заполнена, все ✅
 
 ---
 
 ## 🎉 Итоги недели 4
 
-### Что ты узнал:
-
 | День | Навык |
 |------|-------|
-| 1 | RAG — автоматический поиск файлов |
-| 2 | @Codebase — поиск и понимание кода |
-| 3 | Rules — системные инструкции для ИИ |
-| 4 | Создание персонализированных Rules |
-| 5 | Практика: Rules + @Codebase вместе |
+| 1 | Правила: короткий `AGENTS.md`, тест «верно всегда» |
+| 2 | Skills: плейбук как договор с агентом |
+| 3 | Память: сессия умирает, файл с решениями — нет |
+| 4 | Делегирование: план → подзадача → проверка → коммит |
+| 5 | Разрешения: наименьшие привилегии, стоп-кран |
 
 ### Ключевые принципы:
 
-```
-✅ RAG — ИИ-библиотекарь, сам находит нужный код
-✅ @Codebase — автоматический поиск по проекту
-✅ Rules — инструкции, которые ИИ следует всегда
-✅ Комбинация Rules + @Codebase = максимум эффективности
-✅ Локальные модели медленнее при RAG, но приватны
+```text
+✅ Обвязка — просто файлы в репозитории: правила, плейбуки, заметки
+✅ Контекст даём явно: точные файлы и правила вместо поиска вслепую
+✅ Каждая подзадача принимается только после проверки
+✅ Опасное действие всегда через твоё подтверждение
+✅ Секреты — только в .env, никогда в коде и правилах
 ```
 
 ---
@@ -360,50 +181,29 @@ async def create_comment(
 ## 📊 Итоги 4 недель
 
 ### Неделя 1: Основы
-- Философия Vibe Coding
-- Установка Continue.dev
-- Выбор модели
-- Первые программы
+- Настройка стека: VS Code + Cline + Groq/Ollama
+- Первая проверенная задача через агента
 
-### Неделя 2: Промпт-инжиниринг
-- P.T.C.F. модель
-- Zero-shot vs Few-shot
-- Chain of Thought
-- AI Debugging
+### Неделя 2: Промпты как ТЗ
+- Приёмка по критериям
+- Структурированные ответы
+- Итерации до результата
 
 ### Неделя 3: Инженерия контекста
-- Context is King
-- @Files, @Folder, @Terminal
-- Чтение чужого кода
-- Работа с терминалом
+- Context is King, выбор файлов
+- Терминал и ошибки как контекст
+- Первый `AGENTS.md`
 
-### Неделя 4: Продвинутый контекст
-- RAG (@Codebase)
-- Rules
-- Персонализация ИИ
-- Комбинация техник
+### Неделя 4: Обвязка агента
+- Правила, плейбуки, память
+- Делегирование подзадач
+- Разрешения и безопасность
 
 ---
 
 ## Что дальше?
 
-**Недели 5-8:** (Coming Soon)
-- MCP (Model Context Protocol)
-- Real Project Build
-- AI Debugging & Refactoring
-- Final Project
-
----
-
-## Checklist дня ✅
-
-- [ ] Создал Rules для проекта
-- [ ] Тест 1: Создание модели
-- [ ] Тест 2: Создание endpoint
-- [ ] Тест 3: Поиск и рефакторинг
-- [ ] Тест 4: Добавление функционала
-- [ ] Проверил, что ИИ следует Rules
-- [ ] Увидел разницу До/После Rules
+**Неделя 5:** подключаем агенту внешние инструменты по протоколу MCP — и сразу ставим их за стоп-кран: approvals, наименьшие привилегии, секреты, локальное против облачного.
 
 ---
 
