@@ -1,4 +1,4 @@
-# День 3: Установка первого MCP-сервера ⚙️
+# День 3: MCP для данных — подключаем SQLite 🗄️
 
 **Трек:** 🌱 Начинающий | **Время:** 50 минут
 
@@ -6,442 +6,208 @@
 
 ## 🎯 Цель дня
 
-Установить SQLite MCP-сервер и подключить его к Continue.dev.
+Создать тестовую базу данных, подключить к ней SQLite MCP-сервер вручную и выполнить первые запросы через карточки одобрения — читая SQL до того, как он выполнится.
 
 ---
 
-## ⚠️ Важно перед началом
+## 🛠️ Часть 1: Что понадобится
 
-### Требования:
+| Уровень | Железо | Модель в Cline |
+|---------|--------|----------------|
+| CPU + бесплатный API | любой компьютер | Groq `openai/gpt-oss-20b` |
+| 4GB GPU (Ollama) | видеокарта от 4GB VRAM | `qwen3.5:2b` (запасная: `qwen3:4b`) |
+| 16GB GPU (Ollama) | видеокарта от 16GB VRAM | `gpt-oss:20b` |
 
-```
-✅ Node.js установлен (проверь: node --version)
-✅ Continue.dev установлен в VS Code
-✅ Тестовая база test.db создана (из Дня 2)
-```
-
-### Если Node.js нет:
+**Проверено: 2026-10-24.** Официальный SQLite MCP-сервер — это Python-пакет, который запускается через `uvx`. Ставим один раз:
 
 ```bash
-# Ubuntu/Debian
-sudo apt-get install nodejs npm
+# Linux / macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# macOS
-brew install node
-
-# Windows
-# Скачай с https://nodejs.org/
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
+
+После установки открой **новый** терминал и проверь: `uvx --version`.
 
 ---
 
-## Часть 1: Что мы будем делать?
+## 🗄️ Часть 2: Готовим тестовую базу
 
-### План:
-
-```
-1. Установить SQLite MCP через npm
-2. Настроить Continue.dev для работы с MCP
-3. Протестировать подключение
-4. Убедиться, что ИИ "видит" базу данных
-```
-
-### Схема:
-
-```
-┌──────────────┐
-│  Continue.dev │
-│  (VS Code)    │
-└───────┬──────┘
-        │ MCP Protocol
-        ▼
-┌──────────────┐         ┌────────────┐
-│  SQLite MCP   │ ←─────→│ test.db    │
-│  Server       │         │ (твоя БД)  │
-└──────────────┘         └────────────┘
-```
-
----
-
-## Часть 2: Установка SQLite MCP
-
-### Шаг 1: Создай папку для MCP-серверов
+Создадим лабораторную папку — она останется с нами до конца недели.
 
 ```bash
-mkdir -p ~/mcp-servers
-cd ~/mcp-servers
+mkdir -p ~/projects/mcp-lab
+cd ~/projects/mcp-lab
 ```
 
-### Шаг 2: Клонируй репозиторий MCP-серверов
-
-```bash
-git clone https://github.com/modelcontextprotocol/servers.git
-```
-
-Если git не установлен:
-
-```bash
-# Ubuntu/Debian
-sudo apt-get install git
-
-# macOS
-brew install git
-```
-
-### Шаг 3: Перейди в папку SQLite MCP
-
-```bash
-cd servers/src/sqlite
-```
-
-### Шаг 4: Установи зависимости
-
-```bash
-npm install
-```
-
-Это может занять 1-2 минуты.
-
-### Шаг 5: Собери проект
-
-```bash
-npm run build
-```
-
-Если成功了 (success), увидишь сообщение о сборке.
-
----
-
-## Часть 3: Настройка Continue.dev
-
-### Где конфигурация?
-
-```
-Файл: ~/.continue/config.json
-
-Или в VS Code:
-1. Cmd/Ctrl + Shift + P
-2. Напиши "Continue: Open Settings"
-3. Выбери "Open Config File"
-```
-
-### Структура config.json:
-
-```json
-{
-  "models": [...],
-  "tabAutocompleteModel": {...},
-  "mcpServers": {
-    "sqlite": {
-      "command": "node",
-      "args": ["/path/to/sqlite-server/build/index.js"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Шаг 1: Найди полный путь к SQLite MCP
-
-```bash
-pwd
-```
-
-Это покажет текущий путь. Он должен заканчиваться на `servers/src/sqlite`.
-
-Пример:
-```
-/home/username/mcp-servers/servers/src/sqlite
-```
-
-### Шаг 2: Открой config.json Continue.dev
-
-```bash
-# Linux/macOS
-nano ~/.continue/config.json
-
-# Или открой через VS Code
-code ~/.continue/config.json
-```
-
-### Шаг 3: Добавь секцию mcpServers
-
-Если файл пустой или минимальный, добавь:
-
-```json
-{
-  "models": [
-    {
-      "title": "Local Model",
-      "provider": "ollama",
-      "model": "qwen3.5:2b"
-    }
-  ],
-  "mcpServers": {
-    "sqlite": {
-      "command": "node",
-      "args": ["/home/username/mcp-servers/servers/src/sqlite/build/index.js"]
-    }
-  }
-}
-```
-
-**Важно:** Замени `/home/username/...` на ТВОЙ реальный путь!
-
-### Для разных конфигураций железа:
-
-#### CPU Only (Free API):
-
-```json
-{
-  "models": [
-    {
-      "title": "Groq GPT-OSS",
-      "provider": "groq",
-      "model": "openai/gpt-oss-20b",
-      "apiKey": "твой-groq-api-key"
-    }
-  ],
-  "mcpServers": {
-    "sqlite": {
-      "command": "node",
-      "args": ["/полный/путь/к/sqlite/build/index.js"]
-    }
-  }
-}
-```
-
-#### 4GB GPU (Ollama):
-
-```json
-{
-  "models": [
-    {
-      "title": "Ollama Qwen",
-      "provider": "ollama",
-      "model": "qwen3.5:2b"
-    }
-  ],
-  "mcpServers": {
-    "sqlite": {
-      "command": "node",
-      "args": ["/полный/путь/к/sqlite/build/index.js"]
-    }
-  }
-}
-```
-
-#### 16GB GPU (Ollama):
-
-```json
-{
-  "models": [
-    {
-      "title": "Ollama GPT-OSS",
-      "provider": "ollama",
-      "model": "gpt-oss:20b"
-    }
-  ],
-  "mcpServers": {
-    "sqlite": {
-      "command": "node",
-      "args": ["/полный/путь/к/sqlite/build/index.js"]
-    }
-  }
-}
-```
-
----
-
-## Часть 4: Проверка установки
-
-### Шаг 1: Перезапусти VS Code
-
-```
-Cmd/Ctrl + Shift + P → "Reload Window"
-```
-
-Или просто закрой и открой VS Code.
-
-### Шаг 2: Открой Continue.dev
-
-```
-Cmd/Ctrl + L → откроется боковая панель Continue
-```
-
-### Шаг 3: Проверь, что MCP загружен
-
-В чате Continue.dev напиши:
-
-```
-Какие MCP-инструменты у тебя есть?
-```
-
-ИИ должен ответить что-то вроде:
-
-```
-У меня есть доступ к следующим MCP-инструментам:
-1. read_query - выполнить SQL запрос на чтение
-2. list_tables - показать список таблиц
-3. describe_table - показать структуру таблицы
-```
-
-**Если ИИ не видит инструменты:**
-- Проверь путь в config.json
-- Убедись, что npm run build успешно выполнился
-- Проверь, что node установлен: `node --version`
-
----
-
-## Часть 5: Первый запрос к базе через MCP!
-
-### Убедись, что test.db в доступном месте:
-
-```bash
-# Создай папку для проекта
-mkdir -p ~/projects/mcp-test
-cd ~/projects/mcp-test
-
-# Скопируй test.db (если она не здесь)
-cp /path/to/test.db .
-```
-
-### Запрос 1: Список таблиц
-
-В Continue.dev:
-
-```
-@Folder: ~/projects/mcp-test
-
-Подключись к базе test.db и покажи список всех таблиц
-```
-
-ИИ (через MCP) должен ответить:
-
-```
-В базе test.db найдены таблицы:
-- users (5 записей)
-- orders (10 записей)
-```
-
-### Запрос 2: Структура таблицы
-
-```
-Покажи структуру таблицы users
-```
-
-ИИ:
-
-```
-Таблица users:
-- id: INTEGER, PRIMARY KEY
-- name: TEXT, NOT NULL
-- email: TEXT, UNIQUE
-- created_at: DATETIME, DEFAULT CURRENT_TIMESTAMP
-```
-
-### Запрос 3: Простой SELECT
-
-```
-Покажи первых 3 пользователей из таблицы users
-```
-
-ИИ (выполняет SQL через MCP):
+Создай файл `create_test_db.sql`:
 
 ```sql
-SELECT * FROM users LIMIT 3;
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    product TEXT NOT NULL,
+    amount REAL,
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+INSERT INTO users (name, email) VALUES
+    ('Анна', 'anna@example.com'),
+    ('Борис', 'boris@example.com'),
+    ('Виктор', 'victor@example.com'),
+    ('Галина', 'galina@example.com'),
+    ('Дмитрий', 'dmitry@example.com');
+
+INSERT INTO orders (user_id, product, amount) VALUES
+    (1, 'Laptop', 999.99),
+    (1, 'Mouse', 25.50),
+    (2, 'Keyboard', 75.00),
+    (3, 'Monitor', 299.99),
+    (3, 'Webcam', 45.00),
+    (4, 'Headphones', 120.00),
+    (5, 'Laptop', 999.99),
+    (1, 'USB Hub', 35.00),
+    (2, 'Mouse Pad', 15.00),
+    (3, 'Speaker', 85.00);
 ```
 
-Результат:
+Собери базу и проверь:
 
+```bash
+sqlite3 test.db < create_test_db.sql
+sqlite3 test.db "SELECT name, email FROM users LIMIT 3;"
 ```
-ID | Name   | Email              | Created At
-1  | Анна   | anna@example.com   | 2024-01-15 10:30:00
-2  | Борис  | boris@example.com  | 2024-01-15 10:30:00
-3  | Виктор | victor@example.com | 2024-01-15 10:30:00
+
+Ожидаемый вывод:
+
+```text
+Анна|anna@example.com
+Борис|boris@example.com
+Виктор|victor@example.com
 ```
+
+Если `sqlite3` не установлен: Ubuntu/Debian — `sudo apt-get install sqlite3`, macOS — `brew install sqlite`, Windows — инсталлятор с sqlite.org.
 
 ---
 
-## Часть 6: Что происходит "под капотом"?
+## ⚙️ Часть 3: Подключаем SQLite MCP
 
-### Когда ты пишешь промпт:
+Открой `cline_mcp_settings.json` (окно MCP → **Configure MCP Servers**) и добавь сервер `sqlite` рядом с `memory`:
 
+```json
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "/home/username/projects/mcp-lab/test.db"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
 ```
-Ты: "Покажи топ-3 пользователя по заказам"
 
-Continue.dev:
-1. Распознаёт, что нужен MCP-инструмент
-2. Вызывает SQLite MCP Server
-3. MCP выполняет SQL:
-   SELECT u.name, COUNT(o.id) as order_count
-   FROM users u
-   JOIN orders o ON u.id = o.user_id
-   GROUP BY u.id
-   ORDER BY order_count DESC
-   LIMIT 3
-4. MCP возвращает результат
-5. ИИ форматирует и показывает тебе
-```
+**Важно:**
 
-### Ты НЕ пишешь SQL!
+- Замени путь на **свой абсолютный путь** к `test.db`. Windows: двойные обратные слэши — `"C:\\Users\\name\\projects\\mcp-lab\\test.db"`.
+- Сервер подключён к **одному конкретному файлу** базы. Другие базы агент через него не увидит — это уже наименьшие привилегии, оценишь в День 4.
+- Сохрани (`Ctrl+S`) и убедись, что `sqlite` зелёный в списке Installed.
 
-```
-❌ Старый способ:
-Ты: Пишешь SQL вручную
-Ты: Выполняешь в терминале
-Ты: Копируешь результат
-
-✅ Vibe Coding с MCP:
-Ты: "Покажи топ-3 пользователя по заказам"
-ИИ: Всё делает сам через MCP
-```
+Если сервер не стартует: перезапусти VS Code после установки uv (чтобы обновился PATH) и проверь `uvx --version` в терминале.
 
 ---
 
-## Часть 7: Troubleshooting (Решение проблем)
+## ✅ Часть 4: Первые запросы через одобрения
 
-### Проблема: ИИ не видит MCP-инструменты
+### Запрос 1: обзор базы
 
-**Решение:**
-```bash
-# 1. Проверь путь
-ls ~/mcp-servers/servers/src/sqlite/build/index.js
-
-# 2. Если файла нет, собери заново
-cd ~/mcp-servers/servers/src/sqlite
-npm run build
-
-# 3. Перезапусти VS Code
+```text
+Подключись к базе test.db и покажи, какие таблицы в ней есть.
 ```
 
-### Проблема: Ошибка "Cannot find module"
+Карточка: `sqlite (MCP): list_tables` → аргументов нет → **Approve**.
 
-**Решение:**
-```bash
-cd ~/mcp-servers/servers/src/sqlite
-npm install
+Ожидаемый ответ: две таблицы, `users` (5 записей) и `orders` (10 записей).
+
+### Запрос 2: структура таблицы
+
+```text
+Покажи структуру таблицы users.
 ```
 
-### Проблема: ИИ не может подключиться к базе
+Карточка: `sqlite (MCP): describe_table` → **Approve**. Агент перечислит поля: id, name, email, created_at.
 
-**Решение:**
-```
-Убедись:
-1. test.db существует (ls test.db)
-2. Путь к базе правильный
-3. У тебя есть права на чтение файла
+### Запрос 3: настоящий SQL — читай внимательно!
+
+```text
+Покажи топ-3 пользователя по сумме заказов.
 ```
 
-### Проблема: MCP сервер падает
+Теперь в карточке будет SQL. Пример того, что ты увидишь:
 
-**Решение:**
-```bash
-# Запусти MCP сервер вручную для отладки
-node ~/mcp-servers/servers/src/sqlite/build/index.js
-
-# Если есть ошибки, посмотри вывод
+```sql
+SELECT u.name, SUM(o.amount) AS total
+FROM users u
+JOIN orders o ON u.id = o.user_id
+GROUP BY u.id
+ORDER BY total DESC
+LIMIT 3
 ```
+
+Прочитай запрос как договор: он только читает (`SELECT`), ничего не меняет → **Approve**.
+
+Ожидаемый результат:
+
+```text
+1. Анна   — $1,060.49
+2. Виктор — $429.99
+3. Борис  — $90.00
+```
+
+💡 Ты не писал ни строчки SQL — но обязан понимать, что одобряешь. `SELECT` читает, `INSERT/UPDATE/DELETE` меняет данные. Это различие — твой главный фильтр при чтении карточек.
+
+---
+
+## 🧠 Часть 5: Что произошло под капотом
+
+```text
+Ты:      «Покажи топ-3 пользователя по сумме заказов»
+Модель:  решает, какой инструмент нужен → read_query
+Cline:   показывает карточку и ждёт тебя
+Ты:      читаешь SQL → Approve
+Сервер:  выполняет SQL над test.db и возвращает строки
+Модель:  форматирует ответ
+```
+
+История вызовов видна в окне MCP — можно всегда проверить, кто и что спрашивал у базы.
+
+---
+
+## 🔧 Часть 6: Troubleshooting
+
+| Симптом | Что делать |
+|---------|------------|
+| `uvx` не найден | Установи uv (Часть 1), перезапусти терминал и VS Code |
+| Сервер красный в Installed | Проверь абсолютный путь к test.db в `--db-path` |
+| «unable to open database file» | Файла нет или путь с опечаткой: проверь `ls ~/projects/mcp-lab` |
+| Агент зовёт не тот инструмент | Уточни промпт: «используй MCP-сервер sqlite» |
 
 ---
 
@@ -449,34 +215,37 @@ node ~/mcp-servers/servers/src/sqlite/build/index.js
 
 | Принцип | Объяснение |
 |---------|------------|
-| **config.json** | Файл настройки Continue.dev |
-| **mcpServers** | Секция для подключения MCP-серверов |
-| **Абсолютный путь** | Всегда указывай полный путь к MCP-серверу |
-| **Перезапуск** | После изменения config нужно перезапустить VS Code |
-| **npm run build** | Обязательно собери MCP-сервер перед использованием |
+| **Один сервер — одна база** | Доступ выдаётся к конкретному файлу, не ко всем сразу |
+| **Читай SQL до одобрения** | SELECT — читать можно, DELETE — стоп |
+| **Карточка = договор** | Что в аргументах, то и выполнится |
+| **Локальный сервер** | База не покидала твой компьютер |
 
 ---
 
 ## Checklist дня ✅
 
-- [ ] Установил SQLite MCP через git clone и npm
-- [ ] Собрал проект (npm run build)
-- [ ] Нашёл абсолютный путь к серверу
-- [ ] Добавил mcpServers в config.json Continue.dev
-- [ ] Перезапустил VS Code
-- [ ] Проверил, что ИИ видит MCP-инструменты
-- [ ] Выполнил первый SQL запрос через MCP
+- [ ] Создал `~/projects/mcp-lab/test.db` с двумя таблицами
+- [ ] Установил uv и подключил SQLite MCP вручную
+- [ ] Прошёл три запроса: list_tables, describe_table, read_query
+- [ ] Прочитал SQL в карточке перед каждым одобрением
+- [ ] Проверил историю вызовов в окне MCP
+
+---
+
+## 🎯 Миссия дня
+
+Задай агенту три собственных аналитических вопроса к базе (например: «Какой товар приносит больше всего денег?», «Есть ли пользователи без заказов?», «Какова средняя сумма заказа?»). Затем:
+
+1. Лучший ответ с цифрами сохрани в файл `~/projects/mcp-lab/report.md`.
+2. В `mcp-notes.md` запиши один SQL-запрос, который агент выполнил (скопируй из карточки одобрения).
+
+**Проверка:** `report.md` существует и содержит цифры, совпадающие с ответом агента; SQL в `mcp-notes.md` начинается с `SELECT`.
 
 ---
 
 ## Что дальше?
 
-**Завтра (День 4):** Научимся вести диалог с ИИ через MCP — как правильно формулировать запросы к данным.
-
-**Домашнее задание:**
-- Попробуй разные запросы к test.db
-- Запиши, какие запросы сработали хорошо, а какие — нет
-- Подумай: какие ещё данные было бы интересно проанализировать?
+**Завтра (День 4):** Подключим файловый сервер и научимся ограничивать доступ одной папкой.
 
 ---
 
