@@ -4,113 +4,90 @@
 
 ---
 
+## 🚨 Учился по старой версии курса? (миграция с Continue)
+
+Курс перешёл с Continue.dev на **Cline**: Continue.dev больше не развивается (проект в режиме read-only после покупки Cursor) и в новых уроках не используется. **OpenCode** — это не замена, а CLI-апгрейд для программиста: тот же стек моделей, но работа из терминала.
+
+Если стоит старый клиент — просто удали его и каталог `~/.continue` (там только твой старый конфиг). Ключи API там не хранятся отдельно, но на всякий случай проверь, что ключ Groq у тебя сохранён.
+
+---
+
 ## ⚡ TL;DR
 
 ```bash
-# 1. Установи Continue.dev
-code --install-extension Continue.continue
+# 1. Установи Cline (базовый агент курса)
+code --install-extension saoudrizwan.claude-dev
 
-# 2. Открой Continue: Ctrl+L (Cmd+L на Mac)
+# 2. Опционально: OpenCode — CLI-апгрейд для программиста
+curl -fsSL https://opencode.ai/install | bash
 
-# 3. Настрой модель (завтра в Day 3)
+# 3. Модель подключим завтра (День 3)
 ```
 
 ---
 
-## 🔧 VS Code Extension
+## 🔧 Установка Cline
 
 ### Способ 1: CLI (рекомендуется)
 
 ```bash
-code --install-extension Continue.continue
+code --install-extension saoudrizwan.claude-dev
 ```
 
 ### Способ 2: Через VS Code
 
-1. `Ctrl+Shift+X` (Extensions)
-2. Поиск: `Continue`
-3. Install от **Continue Dev**
+1. Открой панель Extensions: `Ctrl+Shift+X` (`Cmd+Shift+X` на Mac)
+2. В поиске набери `Cline`
+3. Нажми **Install** у расширения от **Cline Bot Inc.** (автор `saoudrizwan`)
+4. Иконка Cline появится в левой панели VS Code — кликни её
+
+Первый запуск: Cline спросит, как подключиться к моделям. Выбери **«Use your own API key»** — провайдера и модель настроим завтра в Дне 3.
+
+💡 **Настройка по умолчанию:** оставь автоподтверждение действий (Auto-approve) **выключенным**. Каждое действие агента — создание файла, правка, запуск команды — должно проходить через твоё явное «разрешить». Это навык №1: агент работает только под твоим контролем.
 
 ---
 
-## 📸 Интерфейс Continue
+## 📦 Апгрейд для программиста: OpenCode (CLI)
 
-После установки (`Ctrl+L`):
+Cline живёт внутри VS Code. OpenCode — тот же агентный подход, но в терминале: удобно, когда ты уже живёшь в шелле. Это **апгрейд, а не требование**: курс можно пройти полностью на Cline.
 
-```
-┌─────────────────────────────┐
-│  Continue Chat              │
-├─────────────────────────────┤
-│                             │
-│  [История чата]             │
-│                             │
-├─────────────────────────────┤
-│  [Модель: Select ▼]         │
-│  [Контекст: Files ▼]        │
-├─────────────────────────────┤
-│  Введите промпт...          │
-│  [📎] [🎤] [Send]           │
-└─────────────────────────────┘
+```bash
+# macOS / Linux
+curl -fsSL https://opencode.ai/install | bash
+
+# Проверка
+opencode --version
 ```
 
----
-
-## ⚙️ config.json
-
-Расположение:
-- **Windows:** `%USERPROFILE%\.continue\config.json`
-- **macOS/Linux:** `~/.continue/config.json`
-
-Базовая структура:
-
-```json
-{
-  "models": [
-    {
-      "title": "Model Name",
-      "provider": "groq|ollama|openai",
-      "model": "model-id",
-      "apiKey": "YOUR_KEY" // или "${ENV_VAR}"
-    }
-  ],
-  "contextProviders": [
-    { "name": "codebase" },
-    { "name": "files" },
-    { "name": "open-files" }
-  ]
-}
-```
+Запуск: перейди в каталог проекта и выполни `opencode` — откроется TUI-интерфейс. Провайдер и модель привяжешь завтра, после Дня 3 (`opencode auth login`).
 
 ---
 
-## 🔑 Горячие клавиши
+## 🖥️ Что понадобится завтра: три уровня железа
 
-| Действие | Windows/Linux | macOS |
-|----------|---------------|-------|
-| Открыть Continue | `Ctrl+L` | `Cmd+L` |
-| Новый чат | `Ctrl+Shift+L` | `Cmd+Shift+L` |
-| Вставить выделенное в чат | `Ctrl+Shift+L` | `Cmd+Shift+L` |
+| Твой случай | Вариант | Модель |
+|-------------|---------|--------|
+| CPU + бесплатный API (Tier 1) | Groq (облако) | `openai/gpt-oss-20b` |
+| 4GB GPU + Ollama (Tier 2) | Ollama (локально) | `qwen3.5:2b` (запасной: `qwen3:4b`) |
+| 16GB GPU + Ollama (Tier 3) | Ollama (локально) | `gpt-oss:20b` |
 
----
-
-## 📸 Скриншоты (если нужны)
-
-| Скриншот | Путь |
-|----------|------|
-| VS Code download | ![vscode](./images/vscode.png) |
-| Extensions icon | ![extension](./images/extention.png) |
-| Find Continue | ![find](./images/find-continue.png) |
-| Install button | ![install](./images/install.png) |
-| Continue icon | ![icon](./images/continue-icon.png) |
-| Continue panel | ![panel](./images/continue-sections.png) |
+_Проверено: 2026-10-24_
 
 ---
 
 ## ✅ Проверка
 
-1. Открой VS Code
-2. `Ctrl+L` — должна открыться панель Continue
-3. Если видишь "Select a model" — всё работает
+```bash
+# 1. Cline установлен?
+code --list-extensions | grep -i claude-dev
+# Ожидаемый вывод: saoudrizwan.claude-dev
+
+# 2. OpenCode установлен? (если ставил)
+opencode --version
+# Ожидаемый вывод: номер версии
+```
+
+3. В левой панели VS Code есть иконка Cline — панель открывается без ошибок.
 
 ---
 
@@ -118,9 +95,26 @@ code --install-extension Continue.continue
 
 | Проблема | Решение |
 |----------|---------|
-| Continue не открывается | Перезапусти VS Code |
-| Extension не найден | Проверь Marketplace: `code --list-extensions \| grep -i continue` |
-| Config не применяется | Удали `~/.continue` и открой Continue заново |
+| Панель Cline не появляется | Перезапусти VS Code; проверь, что расширение включено в Extensions |
+| `code` не найден в терминале | Установи команду `code` в PATH (в VS Code: палитра команд → «Shell Command: Install 'code' command in PATH») |
+| Cline просит выбрать провайдера | Нормально — подключим модель завтра (День 3) |
+| Скрипт OpenCode не скачивается | Альтернатива: `npm i -g opencode-ai` |
+| OpenCode не запускается | Проверь версию Node/npm для npm-варианта; для install-скрипта — что `~/.opencode/bin` в PATH |
+
+---
+
+## 🎯 Миссия
+
+Установи инструменты и собери доказательства, что они работают.
+
+**Формат артефакта:** вывод двух команд в заметку или чат с самим собой:
+
+```bash
+code --list-extensions | grep -i claude-dev
+opencode --version
+```
+
+**Проверка:** первая команда выводит `saoudrizwan.claude-dev`, вторая — версию OpenCode (или осознанное решение «пока только Cline»). Панель Cline открывается в VS Code.
 
 ---
 

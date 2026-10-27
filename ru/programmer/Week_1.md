@@ -2,7 +2,7 @@
 
 **Трек:** 👨‍💻 Программист (Programmer)
 
-Быстрый старт для тех, кто уже умеет программировать. Пропусти основы — сосредоточься на AI-инструментах и workflow.
+Быстрый старт для тех, кто уже умеет программировать. Пропусти основы — сосредоточься на агентном workflow: делегирование, ревью диффов, верификация.
 
 ---
 
@@ -11,7 +11,7 @@
 | День | Тема | Время | Статус |
 |------|------|-------|--------|
 | [День 1](./Week_1/Day_1.md) | Vibe Coding: смена парадигмы | 15 мин | ⬜ |
-| [День 2](./Week_1/Day_2.md) | Быстрая установка (VS Code + Continue) | 10 мин | ⬜ |
+| [День 2](./Week_1/Day_2.md) | Быстрая установка (VS Code + Cline) | 10 мин | ⬜ |
 | [День 3](./Week_1/Day_3.md) | Модели: Groq vs Ollama vs Local | 20 мин | ⬜ |
 | [День 4](./Week_1/Day_4.md) | AI Workflow: промпты и итерации | 25 мин | ⬜ |
 | [День 5](./Week_1/Day_5.md) | Практика: ASCII генератор | 30 мин | ⬜ |
@@ -23,9 +23,9 @@
 ## 🎯 Что ты узнаешь
 
 - **День 1:** Почему Vibe Coding — это не "лень", а efficiency
-- **День 2:** Установка Continue.dev (3 минуты)
+- **День 2:** Установка Cline + OpenCode как CLI-апгрейд для программиста
 - **День 3:** Выбор модели: Groq (cloud) vs Ollama (local)
-- **День 4:** AI workflow: промпт → код → проверка → итерация
+- **День 4:** Agent loop: спека → делегирование → diff review → верификация
 - **День 5:** Практика с реальным проектом
 
 ---
@@ -33,14 +33,17 @@
 ## ⚡ TL;DR для нетерпеливых
 
 ```bash
-# 1. Установи Continue.dev в VS Code
-code --install-extension Continue.continue
+# 1. Установи Cline в VS Code (базовый агент)
+code --install-extension saoudrizwan.claude-dev
 
-# 2. Выбери модель
-# Cloud (быстро): Groq API - https://console.groq.com
+# 2. Опционально: OpenCode — CLI-апгрейд для программиста
+curl -fsSL https://opencode.ai/install | bash
+
+# 3. Выбери модель
+# CPU + бесплатный API (быстро): Groq - https://console.groq.com
 # Local (приватно): ollama pull gpt-oss:20b
 
-# 3. Открой Continue (Ctrl+L) и начни кодить
+# 4. Открой панель Cline в VS Code и начни делегировать
 ```
 
 ---
