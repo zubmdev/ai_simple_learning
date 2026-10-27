@@ -3,10 +3,9 @@ import json
 import os
 import re
 import sys
-import urllib.error
-import urllib.request
 import uuid
 from pathlib import Path
+from typing import NamedTuple
 
 from pipeline.convert import (
     MAX_BLOCKS,
@@ -20,8 +19,8 @@ from pipeline.convert import (
     stats,
     warnings,
 )
+from pipeline.telegram import mask, post_raw as _post
 
-API_BASE = "https://api.telegram.org"
 PLACEHOLDER_RAW = "https://raw.githubusercontent.com/PLACEHOLDER/course/main"
 PLACEHOLDER_BLOB = "https://github.com/PLACEHOLDER/course/blob/main"
 
@@ -117,25 +116,8 @@ def validate(text):
     return issues
 
 
-def mask(text, token):
-    if token:
-        text = text.replace(token, "***")
-    return text
-
-
-def _post(token, method, data, headers):
-    url = f"{API_BASE}/bot{token}/{method}"
-    request = urllib.request.Request(url, data=data, headers=headers)
-    try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        body = error.read().decode("utf-8", "replace")
-        raise RuntimeError(f"{method}: HTTP {error.code}: {mask(body, token)}")
-    except OSError as error:
-        raise RuntimeError(f"{method}: {mask(str(error), token)}")
-    except json.JSONDecodeError:
-        raise RuntimeError(f"{method}: некорректный JSON-ответ")
+def missing_config(cfg, names):
+    return [name for name in names if not cfg.get(name)]
 
 
 def build_reply_markup(blob_url=None, discuss_url=None):
@@ -222,11 +204,18 @@ def _message_label(response):
     return "?"
 
 
+class RepoBases(NamedTuple):
+    raw_base: str
+    blob_base: str
+    placeholder: bool
+
+
 def _resolve_bases(cfg):
     if cfg.get("REPO_URL"):
         branch = cfg.get("REPO_BRANCH") or "main"
-        return repo_bases(cfg["REPO_URL"], branch), False
-    return (PLACEHOLDER_RAW, PLACEHOLDER_BLOB), True
+        raw_base, blob_base = repo_bases(cfg["REPO_URL"], branch)
+        return RepoBases(raw_base, blob_base, False)
+    return RepoBases(PLACEHOLDER_RAW, PLACEHOLDER_BLOB, True)
 
 
 def _prepare(md_rel, repo_root, raw_base, blob_base):
@@ -256,20 +245,33 @@ def _report(md_rel, parts, problems, converted):
         print(f"  ⚠ {problem}")
 
 
-def cmd_check(files, cfg, repo_root):
-    (raw_base, blob_base), placeholder = _resolve_bases(cfg)
+def _process(files, repo_root, bases, on_report=None, on_ready=None):
     failed = 0
     for md_rel in files:
         md_rel = norm_rel(md_rel)
-        if not Path(repo_root, *md_rel.split("/")).exists():
+        path = Path(repo_root, *md_rel.split("/"))
+        if not path.exists():
             print(f"ОШИБКА {md_rel}: файл не найден")
             failed += 1
             continue
-        _, converted, parts, problems = _prepare(md_rel, repo_root, raw_base, blob_base)
+        src, converted, parts, problems = _prepare(
+            md_rel, repo_root, bases.raw_base, bases.blob_base
+        )
         _report(md_rel, parts, problems, converted)
+        if on_report:
+            on_report(md_rel, path, src, parts, bases)
         if problems:
             failed += 1
-    if placeholder:
+            continue
+        if on_ready and not on_ready(md_rel, path, src, parts, bases):
+            failed += 1
+    return failed
+
+
+def cmd_check(files, cfg, repo_root):
+    bases = _resolve_bases(cfg)
+    failed = _process(files, repo_root, bases)
+    if bases.placeholder:
         print(
             "REPO_URL/REPO_BRANCH не заданы — ссылки в статистике условные, "
             "для --publish задай их в .env"
@@ -278,29 +280,23 @@ def cmd_check(files, cfg, repo_root):
 
 
 def cmd_dry_run(files, cfg, repo_root):
-    (raw_base, blob_base), _ = _resolve_bases(cfg)
-    failed = 0
-    for md_rel in files:
-        md_rel = norm_rel(md_rel)
-        if not Path(repo_root, *md_rel.split("/")).exists():
-            print(f"ОШИБКА {md_rel}: файл не найден")
-            failed += 1
-            continue
-        _, converted, parts, problems = _prepare(md_rel, repo_root, raw_base, blob_base)
-        _report(md_rel, parts, problems, converted)
+    bases = _resolve_bases(cfg)
+
+    def on_report(md_rel, path, src, parts, bases):
         markup = build_reply_markup(
-            f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
+            f"{bases.blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
         )
         if markup:
             labels = [b["text"] for row in markup["inline_keyboard"] for b in row]
             print(f"  кнопки (отдельным сообщением): {', '.join(labels)}")
-        if problems:
-            failed += 1
-            continue
+
+    def on_ready(md_rel, path, src, parts, bases):
         for i, part in enumerate(parts, 1):
             print(f"\n{'=' * 20} часть {i}/{len(parts)} {'=' * 20}\n")
             print(part)
-    return 1 if failed else 0
+        return True
+
+    return 1 if _process(files, repo_root, bases, on_report, on_ready) else 0
 
 
 def mark_published(files, schedule_path):
@@ -333,33 +329,18 @@ def mark_published(files, schedule_path):
 
 
 def cmd_publish(files, cfg, repo_root):
-    missing = [
-        name for name in ("BOT_TOKEN", "CHANNEL_ID", "REPO_URL") if not cfg.get(name)
-    ]
+    missing = missing_config(cfg, ("BOT_TOKEN", "CHANNEL_ID", "REPO_URL"))
     if missing:
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
         return 2, []
     token = cfg["BOT_TOKEN"]
     chat_id = cfg["CHANNEL_ID"]
-    (raw_base, blob_base), _ = _resolve_bases(cfg)
+    bases = _resolve_bases(cfg)
     published = []
-    failed = 0
-    for md_rel in files:
-        md_rel = norm_rel(md_rel)
-        path = Path(repo_root, *md_rel.split("/"))
-        if not path.exists():
-            print(f"ОШИБКА {md_rel}: файл не найден")
-            failed += 1
-            continue
-        src, converted, parts, problems = _prepare(
-            md_rel, repo_root, raw_base, blob_base
-        )
-        _report(md_rel, parts, problems, converted)
-        if problems:
-            failed += 1
-            continue
+
+    def on_ready(md_rel, path, src, parts, bases):
         markup = build_reply_markup(
-            f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
+            f"{bases.blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
         )
         try:
             for i, part in enumerate(parts, 1):
@@ -370,16 +351,18 @@ def cmd_publish(files, cfg, repo_root):
             if markup:
                 response = send_buttons(token, chat_id, markup)
                 print(f"  отправлены кнопки (message_id {_message_label(response)})")
-            caption = f"📄 Исходник урока: {blob_base}/{md_rel}"
+            caption = f"📄 Исходник урока: {bases.blob_base}/{md_rel}"
             response = send_document(
                 token, chat_id, path.name, src.encode("utf-8"), caption
             )
             print(f"  приложен исходник (message_id {_message_label(response)})")
         except RuntimeError as error:
             print(f"ОШИБКА {md_rel}: {mask(str(error), token)}")
-            failed += 1
-            continue
+            return False
         published.append(md_rel)
+        return True
+
+    failed = _process(files, repo_root, bases, on_ready=on_ready)
     return (1 if failed else 0), published
 
 

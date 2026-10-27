@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from pipeline.bot import api
-from pipeline.publisher import load_env, mask
+from pipeline.publisher import load_env, mask, missing_config
 
 DEFAULT_LOG = "docs/metrics/subscribers.log"
 
@@ -47,7 +47,7 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     cfg = load_env(args.env)
-    missing = [name for name in ("BOT_TOKEN", "CHANNEL_ID") if not cfg.get(name)]
+    missing = missing_config(cfg, ("BOT_TOKEN", "CHANNEL_ID"))
     if missing:
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
         return 2

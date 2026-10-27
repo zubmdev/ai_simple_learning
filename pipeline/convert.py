@@ -87,6 +87,28 @@ _HR_MASK = "\x00hr\x00"
 _PART_MARKER_RESERVE = 24
 
 
+ZONE_OPEN = "open"
+ZONE_INSIDE = "inside"
+ZONE_CLOSE = "close"
+ZONE_OUTSIDE = "outside"
+
+
+def _iter_lines(text):
+    in_fence = False
+    for line in text.split("\n"):
+        if line.strip().startswith("```"):
+            if in_fence:
+                in_fence = False
+                yield line, ZONE_CLOSE
+            else:
+                in_fence = True
+                yield line, ZONE_OPEN
+        elif in_fence:
+            yield line, ZONE_INSIDE
+        else:
+            yield line, ZONE_OUTSIDE
+
+
 def _resolve(md_path, url):
     if re.match(r"^(https?://|mailto:|tel:|tg://)", url) or url.startswith("#"):
         return None
@@ -120,13 +142,8 @@ def _mask_code_spans(line):
 
 def _rewrite_links(text, md_path, raw_base, blob_base):
     out = []
-    in_fence = False
-    for line in text.split("\n"):
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
+    for line, zone in _iter_lines(text):
+        if zone != ZONE_OUTSIDE:
             out.append(line)
             continue
         masked, spans = _mask_code_spans(line)
@@ -140,15 +157,9 @@ def _rewrite_links(text, md_path, raw_base, blob_base):
 
 
 def _lift_inline_media(text):
-    lines = text.split("\n")
     out = []
-    in_fence = False
-    for line in lines:
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence or _CODE_SPAN_RE.search(line):
+    for line, zone in _iter_lines(text):
+        if zone != ZONE_OUTSIDE or _CODE_SPAN_RE.search(line):
             out.append(line)
             continue
         images = _IMAGE_RE.findall(line)
@@ -190,16 +201,13 @@ def _hard_split(part, budget):
     out = []
     while len(part) > budget:
         cut = 0
-        in_fence = False
         pos = 0
-        for line in part.split("\n"):
+        for line, zone in _iter_lines(part):
             if pos >= budget:
                 break
             stripped = line.strip()
-            if not in_fence and not stripped and pos > 0:
+            if zone == ZONE_OUTSIDE and not stripped and pos > 0:
                 cut = pos - 1
-            if stripped.startswith("```"):
-                in_fence = not in_fence
             pos += len(line) + 1
         if cut <= 0:
             cut = budget
@@ -211,11 +219,8 @@ def _hard_split(part, budget):
 
 def _mask_fence_hrs(text):
     out = []
-    in_fence = False
-    for line in text.split("\n"):
-        if line.strip().startswith("```"):
-            in_fence = not in_fence
-        elif in_fence and line == "---":
+    for line, zone in _iter_lines(text):
+        if zone == ZONE_INSIDE and line == "---":
             out.append(_HR_MASK)
             continue
         out.append(line)
@@ -250,18 +255,18 @@ def split_message(text, max_chars=MAX_CHARS):
 
 def stats(text):
     blocks = 0
-    in_fence = False
     prev_blank = True
     table_cols = 0
-    for line in text.split("\n"):
+    for line, zone in _iter_lines(text):
         stripped = line.strip()
-        if stripped.startswith("```"):
-            if not in_fence:
-                blocks += 1
-            in_fence = not in_fence
+        if zone == ZONE_OPEN:
+            blocks += 1
             prev_blank = True
             continue
-        if in_fence:
+        if zone == ZONE_CLOSE:
+            prev_blank = True
+            continue
+        if zone == ZONE_INSIDE:
             continue
         if not stripped:
             prev_blank = True
@@ -298,14 +303,9 @@ def warnings(text, max_chars=MAX_CHARS):
         issues.append(
             f"текст {len(text)} символов — превышает лимит {MAX_CHARS}, нужен сплит"
         )
-    in_fence = False
     link_warned = False
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("```"):
-            in_fence = not in_fence
-            continue
-        if in_fence:
+    for line, zone in _iter_lines(text):
+        if zone != ZONE_OUTSIDE:
             continue
         masked, _ = _mask_code_spans(line)
         if not link_warned:

@@ -2,13 +2,11 @@ import argparse
 import json
 import os
 import sys
-import urllib.error
-import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from pipeline.publisher import load_env, mask
+from pipeline.publisher import load_env, mask, missing_config
+from pipeline.telegram import post_json as api
 
-API_BASE = "https://api.telegram.org"
 EXP_PREFIX = "exp:"
 ALLOWED_UPDATES = ["message", "callback_query"]
 
@@ -20,24 +18,6 @@ GREETING = (
 
 OWNER_TEXT_START = "🚀 /start source={source}{name}"
 OWNER_TEXT_EXP = "🎚 опыт: {tag} (source={source}){name}"
-
-
-def api(token, method, payload):
-    request = urllib.request.Request(
-        f"{API_BASE}/bot{token}/{method}",
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
-        body = error.read().decode("utf-8", "replace")
-        raise RuntimeError(f"{method}: HTTP {error.code}: {mask(body, token)}")
-    except OSError as error:
-        raise RuntimeError(f"{method}: {mask(str(error), token)}")
-    except json.JSONDecodeError:
-        raise RuntimeError(f"{method}: некорректный JSON-ответ")
 
 
 def parse_start(text):
@@ -175,9 +155,7 @@ def build_handler(cfg, secret):
 
 
 def cmd_serve(cfg, host, port):
-    missing = [
-        name for name in ("BOT_TOKEN", "CHANNEL_INVITE_URL") if not cfg.get(name)
-    ]
+    missing = missing_config(cfg, ("BOT_TOKEN", "CHANNEL_INVITE_URL"))
     if missing:
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
         return 2
