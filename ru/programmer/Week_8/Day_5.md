@@ -61,7 +61,7 @@ Production-ready [description]
 **Backend:** Node.js, Express, FastAPI
 **Databases:** PostgreSQL, MongoDB, Redis
 **AI/ML:** Ollama, Groq, OpenAI
-**Tools:** VS Code, Continue.dev, Git, Docker
+**Tools:** VS Code, Cline, Git, Docker
 
 ## 📊 Stats
 
@@ -131,7 +131,8 @@ Skills to Develop:
 
 ```
 Documentation:
-- Continue.dev docs
+- Cline docs
+- OpenCode docs
 - Ollama documentation
 - MCP specification
 
@@ -180,7 +181,7 @@ Projects:
    - Mentor beginners
 
 2. Contribute to Tools
-   - Improve Continue.dev
+   - Improve Cline or OpenCode
    - Create MCP servers
    - Build extensions
 
