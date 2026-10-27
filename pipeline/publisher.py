@@ -25,6 +25,9 @@ API_BASE = "https://api.telegram.org"
 PLACEHOLDER_RAW = "https://raw.githubusercontent.com/PLACEHOLDER/course/main"
 PLACEHOLDER_BLOB = "https://github.com/PLACEHOLDER/course/blob/main"
 
+SCHEDULE_FILE_COL = 2
+SCHEDULE_STATUS_COL = 4
+
 _MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 
 CONFIG_KEYS = frozenset(
@@ -55,6 +58,10 @@ def load_env(path):
         if key in os.environ:
             values[key] = os.environ[key]
     return values
+
+
+def norm_rel(path):
+    return os.path.normpath(path).replace(os.sep, "/")
 
 
 def repo_bases(repo_url, branch):
@@ -253,7 +260,7 @@ def cmd_check(files, cfg, repo_root):
     (raw_base, blob_base), placeholder = _resolve_bases(cfg)
     failed = 0
     for md_rel in files:
-        md_rel = os.path.normpath(md_rel).replace(os.sep, "/")
+        md_rel = norm_rel(md_rel)
         if not Path(repo_root, *md_rel.split("/")).exists():
             print(f"ОШИБКА {md_rel}: файл не найден")
             failed += 1
@@ -274,7 +281,7 @@ def cmd_dry_run(files, cfg, repo_root):
     (raw_base, blob_base), _ = _resolve_bases(cfg)
     failed = 0
     for md_rel in files:
-        md_rel = os.path.normpath(md_rel).replace(os.sep, "/")
+        md_rel = norm_rel(md_rel)
         if not Path(repo_root, *md_rel.split("/")).exists():
             print(f"ОШИБКА {md_rel}: файл не найден")
             failed += 1
@@ -308,15 +315,17 @@ def mark_published(files, schedule_path):
         cols = line.split("\t")
         if (
             i > 0
-            and len(cols) >= 3
-            and cols[2] in pending
-            and (len(cols) < 5 or cols[4] != "done")
+            and len(cols) > SCHEDULE_FILE_COL
+            and cols[SCHEDULE_FILE_COL] in pending
+            and (
+                len(cols) <= SCHEDULE_STATUS_COL or cols[SCHEDULE_STATUS_COL] != "done"
+            )
         ):
-            while len(cols) < 5:
+            while len(cols) <= SCHEDULE_STATUS_COL:
                 cols.append("")
-            cols[4] = "done"
+            cols[SCHEDULE_STATUS_COL] = "done"
             line = "\t".join(cols)
-            marked.append(cols[2])
+            marked.append(cols[SCHEDULE_FILE_COL])
         out.append(line)
     if marked:
         path.write_text("\n".join(out) + "\n", encoding="utf-8")
@@ -336,7 +345,7 @@ def cmd_publish(files, cfg, repo_root):
     published = []
     failed = 0
     for md_rel in files:
-        md_rel = os.path.normpath(md_rel).replace(os.sep, "/")
+        md_rel = norm_rel(md_rel)
         path = Path(repo_root, *md_rel.split("/"))
         if not path.exists():
             print(f"ОШИБКА {md_rel}: файл не найден")
@@ -352,19 +361,24 @@ def cmd_publish(files, cfg, repo_root):
         markup = build_reply_markup(
             f"{blob_base}/{md_rel}", cfg.get("DISCUSS_URL") or None
         )
-        for i, part in enumerate(parts, 1):
-            response = send_rich_message(token, chat_id, part)
-            print(
-                f"  отправлена часть {i}/{len(parts)} (message_id {_message_label(response)})"
+        try:
+            for i, part in enumerate(parts, 1):
+                response = send_rich_message(token, chat_id, part)
+                print(
+                    f"  отправлена часть {i}/{len(parts)} (message_id {_message_label(response)})"
+                )
+            if markup:
+                response = send_buttons(token, chat_id, markup)
+                print(f"  отправлены кнопки (message_id {_message_label(response)})")
+            caption = f"📄 Исходник урока: {blob_base}/{md_rel}"
+            response = send_document(
+                token, chat_id, path.name, src.encode("utf-8"), caption
             )
-        if markup:
-            response = send_buttons(token, chat_id, markup)
-            print(f"  отправлены кнопки (message_id {_message_label(response)})")
-        caption = f"📄 Исходник урока: {blob_base}/{md_rel}"
-        response = send_document(
-            token, chat_id, path.name, src.encode("utf-8"), caption
-        )
-        print(f"  приложен исходник (message_id {_message_label(response)})")
+            print(f"  приложен исходник (message_id {_message_label(response)})")
+        except RuntimeError as error:
+            print(f"ОШИБКА {md_rel}: {mask(str(error), token)}")
+            failed += 1
+            continue
         published.append(md_rel)
     return (1 if failed else 0), published
 

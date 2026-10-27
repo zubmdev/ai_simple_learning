@@ -9,6 +9,8 @@ from pathlib import Path
 from pipeline import publisher
 from pipeline.publisher import check_links, load_env, mark_published, mask, repo_bases
 
+SCHEDULE_HEADER = "date\ttime_utc\tfile\tnote\tstatus\n"
+
 
 class LoadEnv(unittest.TestCase):
     def test_parses_quotes_and_skips_comments(self):
@@ -267,7 +269,7 @@ class LoadEnvKnownKeys(unittest.TestCase):
 
 
 class MarkPublished(unittest.TestCase):
-    HEADER = "date\ttime_utc\tfile\tnote\tstatus\n"
+    HEADER = SCHEDULE_HEADER
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -330,7 +332,7 @@ class MarkPublishedFlag(unittest.TestCase):
         Path(".env").write_text("BOT_TOKEN=T\nCHANNEL_ID=@c\n", encoding="utf-8")
         Path("launch").mkdir()
         Path("launch", "schedule.tsv").write_text(
-            "date\ttime_utc\tfile\tnote\tstatus\n" + files, encoding="utf-8"
+            SCHEDULE_HEADER + files, encoding="utf-8"
         )
 
     def test_requires_publish_mode(self):
@@ -355,6 +357,37 @@ class MarkPublishedFlag(unittest.TestCase):
         self.assertEqual(code, 0)
         text = Path("launch", "schedule.tsv").read_text(encoding="utf-8")
         self.assertIn("day.md\tx\tdone\n", text)
+
+    def test_runtime_error_mid_send_marks_only_completed(self):
+        self.env_and_schedule(
+            "2026-10-27\t06:00\ta.md\tx\ttodo\n2026-10-27\t07:00\tb.md\ty\ttodo\n"
+        )
+        Path("a.md").write_text("Ок", encoding="utf-8")
+        Path("b.md").write_text("Пока", encoding="utf-8")
+        calls = []
+
+        def post(token, method, data, headers):
+            calls.append(method)
+            if len(calls) == 4:
+                raise RuntimeError("sendRichMessage: HTTP 500: oops")
+            return {"result": {"message_id": 1}}
+
+        with mock.patch.object(publisher, "_post", side_effect=post):
+            code = publisher.main(
+                [
+                    "--publish",
+                    "--mark-published",
+                    "a.md",
+                    "b.md",
+                    "--repo-url",
+                    "https://github.com/a/b",
+                ]
+            )
+        self.assertEqual(code, 1)
+        self.assertEqual(len(calls), 4)
+        text = Path("launch", "schedule.tsv").read_text(encoding="utf-8")
+        self.assertIn("a.md\tx\tdone\n", text)
+        self.assertIn("b.md\ty\ttodo\n", text)
 
     def test_partial_failure_marks_only_published(self):
         self.env_and_schedule(
