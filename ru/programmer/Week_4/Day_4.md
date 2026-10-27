@@ -1,209 +1,141 @@
-# День 4: Custom Rules for Project ⚙️
+# День 4: Субагенты и Делегирование 🔀
 
 **Трек:** 👨‍💻 Программист | **Время:** 25 минут
 
 ---
 
-## 🎯 Цель
+## 🎯 Миссия
 
-Создать персонализированные Rules для конкретного проекта.
-
----
-
-## 📋 Анализ проекта
-
-### Вопросы для Rules
-
-```
-1. Какой язык?
-2. Какой фреймворк?
-3. Какая база данных?
-4. Какой стиль кода?
-5. Какая структура проекта?
-6. Какие conventions?
-```
+Создать read-only субагента-разведчика и прогнать цикл «план → подзадача →
+верификация» на реальной правке. Артефакт: отчёт субагента + твоя
+самостоятельная проверка его находок (grep) + внесённая правка.
 
 ---
 
-## 🛠️ Примеры Rules для разных стеков
+## 💡 Зачем делегировать
 
-### FastAPI + PostgreSQL
+Главный контекст — как рабочий стол: всё, что на него попадает, съедает
+бюджет (Неделя 3). Разведка по репозиторию, ревью диффа, черновики тестов
+замусоривают стол черновиками. Субагент работает в **отдельном контексте** и
+возвращает только результат.
 
-```json
-{
-  "rules": [
-    {
-      "name": "Project",
-      "rule": "FastAPI REST API. PostgreSQL + SQLAlchemy 2.0 async. JWT auth. Pydantic v2. Structure: api/, models/, schemas/, services/."
-    },
-    {
-      "name": "Code",
-      "rule": "Python 3.11+. Type hints everywhere. async/await. Google docstrings. Dependency injection."
-    },
-    {
-      "name": "API",
-      "rule": "RESTful endpoints. APIRouter. response_model. Proper status codes. Pagination for lists."
-    },
-    {
-      "name": "DB",
-      "rule": "SQLAlchemy async. Relationships. Alembic migrations. select() syntax. eager loading."
-    },
-    {
-      "name": "Response",
-      "rule": "Concise. Code first. Max 3 sentences. Russian. No obvious comments."
-    }
-  ]
-}
+```text
+Цикл делегирования:
+1. План: что делаем и по каким критериям примем
+2. Подзадача: субагенту — узкую работу, с контрактом результата
+3. Верификация: проверяешь результат сам, не на слово
 ```
 
-### Django + DRF
-
-```json
-{
-  "rules": [
-    {
-      "name": "Project",
-      "rule": "Django 5.0 + DRF. PostgreSQL. Celery. Structure: apps/, core/, config/."
-    },
-    {
-      "name": "Code",
-      "rule": "Django conventions. Class-based views. Serializers. select_related/prefetch_related."
-    },
-    {
-      "name": "API",
-      "rule": "ViewSets. Routers. Permissions. Throttling. Versioning."
-    }
-  ]
-}
-```
-
-### React + TypeScript
-
-```json
-{
-  "rules": [
-    {
-      "name": "Project",
-      "rule": "React 18 + TypeScript. Tailwind CSS. React Query. Structure: components/, pages/, hooks/, utils/."
-    },
-    {
-      "name": "Code",
-      "rule": "Functional components only. Hooks. Named exports. Destructuring. TypeScript strict mode."
-    },
-    {
-      "name": "Style",
-      "rule": "Tailwind CSS. Mobile-first. Responsive. Dark mode support."
-    }
-  ]
-}
-```
+**Аналогия:** тимлид не читает все 200 файлов сам — он отправляет джуна
+собрать список, а потом выборочно проверяет.
 
 ---
 
-## 🧠 Продвинутые Rules
+## 🛠️ OpenCode: свой субагент
 
-### Автоматические импорты
+Субагент — markdown-файл с ролью и ограниченными инструментами:
 
-```json
-{
-  "name": "Imports",
-  "rule": "Always include necessary imports. For FastAPI: from fastapi import FastAPI, APIRouter, Depends, HTTPException. For Pydantic: from pydantic import BaseModel. For SQLAlchemy: from sqlalchemy import Column, Integer, String, ForeignKey."
-}
+```markdown
+# .opencode/agent/scout.md
+---
+description: Ищет по коду, ничего не меняет
+mode: subagent
+tools:
+  write: false
+  edit: false
+  bash: false
+---
+
+Ты разведчик кода. Отвечай списком путей с номерами строк.
+Никаких правок. В конце — что осталось неясным.
 ```
 
-### Error Handling
+Вызов в чате:
 
-```json
-{
-  "name": "Errors",
-  "rule": "Always handle exceptions. Use HTTPException for APIs. Log errors. Return proper status codes: 400 bad request, 404 not found, 500 server error."
-}
+```text
+@scout Найди все функции без тестов в app/. Верни список путь:функция.
 ```
 
-### Security
+План-режим: переключись в plan — агент только читает и составляет план, без
+правок. Утвердил план → в build → исполняет.
 
-```json
-{
-  "name": "Security",
-  "rule": "Never hardcode secrets. Use env variables. Validate all inputs. Parameterized queries. No eval/exec."
-}
+🚨 Поля frontmatter зависят от версии OpenCode — сверься с дока­ми, если
+конфиг не подхватился. Принцип стабилен: роль + ограниченные инструменты +
+контракт результата.
+
+### Cline: без субагентов — режимами
+
+У Cline есть переключение Plan/Act: в Plan — обсуждение и план, в Act —
+исполнение. Делегирование «руками»: разведку выноси в отдельную задачу,
+правки делай в основной, между ними — новая сессия, чтобы контекст не
+раздувался.
+
+---
+
+## 🧠 Что делегировать
+
+```text
+✅ Поиск и инвентаризация: "найди все вызовы X"
+✅ Ревью диффа: "проверь изменения на edge cases"
+✅ Черновик тестов по готовой спецификации
+❌ Финальные решения и мержи — всегда сам
+❌ Всё подряд: создание субагента на каждый чих дороже пользы
 ```
 
 ---
 
 ## 🛠️ Практика
 
-### Задание: Создай Rules для своего проекта
+**1. Возьми проект** (`todo-cli` или `blog-api` из прошлых дней).
 
-**1. Проанализируй проект:**
+**2. Создай субагента `scout`** (OpenCode) или план-режим (Cline).
 
-```
-Мой проект: ____________
-Язык: ____________
-Фреймворк: ____________
-База данных: ____________
-Структура: ____________
+**3. Делегируй разведку:**
+
+```text
+@scout Составь список всех функций проекта: путь, имя, есть ли тест.
 ```
 
-**2. Создай Rules:**
+**4. Верифицируй сам — не на слово:**
 
-```json
-{
-  "rules": [
-    {
-      "name": "Project",
-      "rule": "[Опиши проект]"
-    },
-    {
-      "name": "Tech Stack",
-      "rule": "[Перечисли технологии]"
-    },
-    {
-      "name": "Code Style",
-      "rule": "[Опиши стиль]"
-    },
-    {
-      "name": "Response",
-      "rule": "[Формат ответа]"
-    }
-  ]
-}
+```bash
+grep -rn "def " . --include="*.py"
 ```
 
-**3. Протестируй:**
+Сравни с отчётом субагента. Расхождение = дыра в доверии, зафиксируй её.
 
-```
-Тест 1: "Создай модель User"
-→ Проверь: type hints, async, docstring
+**5. Цикл на правке:**
 
-Тест 2: "Создай endpoint для регистрации"
-→ Проверь: FastAPI, Pydantic, auth
-
-Тест 3: "Напиши тест для login"
-→ Проверь: pytest, fixtures, coverage
+```text
+1. План: добавим команду done <num> в todo.py.
+   Критерии приёмки: команда отмечает задачу, повторный done — ошибка,
+   list показывает ✓.
+2. Попроси scout подтвердить: где хранится флаг done и кто его читает.
+3. Внеси правку (сам или агент) по плану.
+4. Прогони сценарий: add → done 1 → done 1 → list. Всё зелёное?
 ```
 
 ---
 
-## 📊 Проверка Rules
+## 💻 Уровни для практики
 
-### Checklist
+| Уровень | Модель |
+|---------|--------|
+| CPU + бесплатный API | Groq `openai/gpt-oss-20b` |
+| 4GB GPU (Ollama) | `qwen3.5:2b` |
+| 16GB GPU (Ollama) | `gpt-oss:20b` |
 
-| Rule | Проверка | ✅/❌ |
-|------|----------|-------|
-| Project Context | ИИ использует правильную структуру | |
-| Tech Stack | ИИ использует правильные библиотеки | |
-| Code Style | ИИ следует стилю | |
-| Response Format | ИИ отвечает в нужном формате | |
+_Проверено: 2026-10-24. На Tier 2–3 субагент ест тот же локальный бюджет —
+ещё повод держать его read-only и узким._
 
 ---
 
-## Checklist ✅
+## ✅ Checklist
 
-- [ ] Проанализировал проект
-- [ ] Создал персонализированные Rules
-- [ ] Протестировал с разными промптами
-- [ ] Убедился, что ИИ следует Rules
+- [ ] Создал read-only субагента (или вынес разведку в Plan-режим)
+- [ ] Проверил его отчёт своим grep
+- [ ] Прогнал цикл план → подзадача → верификация
+- [ ] Сценарий `add → done → list` зелёный
 
 ---
 

@@ -1,208 +1,117 @@
-# День 3: Rules & System Prompts 📋
+# День 3: Память — Сессии и Журнал Решений 🧠
 
 **Трек:** 👨‍💻 Программист | **Время:** 20 минут
 
 ---
 
-## 🎯 Цель
+## 🎯 Миссия
 
-Понять Rules (системные инструкции) и создать базовый набор.
-
----
-
-## 💡 Что такое Rules?
-
-**Rules** — инструкции, которые ИИ получает ПЕРЕД каждым ответом.
-
-```
-Without Rules:
-User: "Напиши функцию"
-AI: *пишет без type hints, без docstring*
-
-With Rules:
-User: "Напиши функцию"
-AI: *пишет с type hints и docstring автоматически*
-```
+Завести журнал решений `DECISIONS.md`, привязать его к `AGENTS.md` и
+убедиться, что агент в новой сессии помнит принятое решение. Артефакт:
+файл журнала + ответ агента в свежей сессии, совпадающий с журналом.
 
 ---
 
-## 🔧 Где хранить Rules
+## 💡 Оперативка против архива
 
-### Option 1: config.json
+**Сессионная память** — история чата. Она короткая и дорогая: чем длиннее
+сессия, тем больше шума и выше расход бюджета (Неделя 3, День 1). Начал
+новую задачу — история исчезла.
 
-```json
-{
-  "models": [...],
-  "rules": [
-    {
-      "name": "Code Style",
-      "rule": "Use type hints, async/await, Google docstrings."
-    }
-  ]
-}
+**Постоянная память** — файлы в репозитории. Они не исчезают и читаются
+агентом по требованию.
+
+```text
+Сессия:        текущая задача, живёт час, умирает при /new
+AGENTS.md:     правила, читаются всегда
+DECISIONS.md:  журнал: что решили и почему — читается по ссылке
 ```
 
-### Option 2: .continuerules
+**Аналогия:** сменщик на заводе. Разговор в цеху — оперативка, сменный
+журнал — то, что следующий мастер прочитает утром.
 
-```
-# .continuerules в корне проекта
+### 🚨 Гигиена памяти
 
-Always use type hints.
-Use async/await for I/O.
-Google-style docstrings.
-Be concise.
-```
-
----
-
-## 📋 Примеры Rules
-
-### Code Style
-
-```json
-{
-  "name": "Python Style",
-  "rule": "Python 3.11+ syntax. Type hints everywhere. async/await for I/O. Google docstrings. PEP 8. Max line length 88."
-}
-```
-
-### Framework
-
-```json
-{
-  "name": "FastAPI",
-  "rule": "Use FastAPI with Pydantic v2. SQLAlchemy 2.0 async. Alembic migrations. Dependency injection. Proper HTTP status codes."
-}
-```
-
-### Response Format
-
-```json
-{
-  "name": "Concise",
-  "rule": "Code first. Maximum 3 sentences explanation. No obvious comments. Bullet points for lists. Russian language."
-}
-```
-
-### Testing
-
-```json
-{
-  "name": "Testing",
-  "rule": "Always write pytest tests. Use fixtures. Parametrize for multiple cases. Aim for 90% coverage."
-}
+```text
+1. Одна задача — одна сессия; новая задача — новая сессия
+2. Важный вывод? Запиши в файл, не надейся на чат
+3. Длинную сессию сжимай: Cline — compact, OpenCode — /compact
+4. AGENTS.md ссылается на файлы памяти — тогда агент их найдёт
 ```
 
 ---
 
 ## 🛠️ Практика
 
-### Создай базовый набор Rules
+**1. Возьми проект из Дня 2** (`todo-cli` или `blog-api`).
 
-**1. Открой config.json:**
+**2. Создай журнал решений:**
 
-```
-Ctrl+L → ⚙️ → Open config.json
-```
+```markdown
+# DECISIONS.md
 
-**2. Добавь Rules:**
-
-```json
-{
-  "rules": [
-    {
-      "name": "Project Context",
-      "rule": "FastAPI blog API. PostgreSQL. JWT auth. Structure: api/, models/, schemas/, services/."
-    },
-    {
-      "name": "Tech Stack",
-      "rule": "Python 3.11, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, pytest, JWT."
-    },
-    {
-      "name": "Code Style",
-      "rule": "Type hints everywhere. async/await. Google docstrings. No obvious comments."
-    },
-    {
-      "name": "Response",
-      "rule": "Concise. Code first. Max 3 sentences. Russian language."
-    }
-  ]
-}
+## 2026-10-27: хранение задач — один todos.json
+- Решение: все задачи в одном файле, категория — поле записи.
+- Альтернатива: папка todos/ с файлом на категорию — отклонили:
+  больше файлов, сложнее сортировка по приоритету.
 ```
 
-**3. Сохрани и протестируй:**
+**3. Привяжи к AGENTS.md** (добавь строку):
 
+```markdown
+## Память проекта
+- Перед задачей прочитай DECISIONS.md — там принятые решения.
+- Новое архитектурное решение фиксируй в DECISIONS.md.
 ```
-Напиши функцию для получения списка постов с pagination.
+
+**4. Закрой сессию и открой новую.** Спроси без подсказок:
+
+```text
+Почему задачи хранятся в одном файле, а не в папке по категориям?
 ```
 
-**4. Проверь:**
+Агент должен ответить по журналу: «отклонили из-за сортировки и числа
+файлов». Это и есть проверка постоянной памяти.
 
-- [ ] Type hints есть?
-- [ ] async/await есть?
-- [ ] Docstring есть?
-- [ ] Краткий ответ на русском?
+**5. Попроси агента дополнить журнал** после следующего решения —
+например, выбора библиотеки цветов:
 
----
-
-## 📊 Rules vs Prompt
-
-| Аспект | Rules | Prompt |
-|--------|-------|--------|
-| Применение | Всегда | Один раз |
-| Контекст | Автоматически | Вручную |
-| Место | config.json | Чат |
-
-### Когда использовать
-
-```
-Rules:
-✅ Правила проекта (стиль, фреймворк)
-✅ Формат ответа
-✅ Повторяющиеся требования
-
-Prompt:
-✅ Конкретная задача
-✅ Временные требования
-✅ Специфический контекст
+```text
+Зафиксируй в DECISIONS.md выбор colorama и почему не rich.
 ```
 
 ---
 
-## 💡 Best Practices
+## 🧠 Что куда класть
 
-### 1. Ограничь количество
-
-```
-❌ 50+ Rules → ИИ путается
-✅ 5-10 Rules → Чётко следует
-```
-
-### 2. Избегай противоречий
-
-```
-❌ Rule 1: "Use sync"
-   Rule 2: "Always async"
-
-✅ Убедись в consistency
-```
-
-### 3. Будь конкретным
-
-```
-❌ "Write good code"
-✅ "Type hints, async/await, handle errors"
-```
+| Знание | Куда |
+|--------|------|
+| Стиль, стек, границы | `AGENTS.md` |
+| Принятые решения и почему | `DECISIONS.md` |
+| Карта чужого репозитория | `notes/repo-map.md` (Неделя 3) |
+| План текущей задачи | В сессию — умирать ей там и положено |
 
 ---
 
-## Checklist ✅
+## 💻 Уровни для практики
 
-- [ ] Понял что такое Rules
-- [ ] Узнал где хранить
-- [ ] Создал базовый набор
-- [ ] Протестировал
-- [ ] Увидел разницу
+| Уровень | Модель |
+|---------|--------|
+| CPU + бесплатный API | Groq `openai/gpt-oss-20b` |
+| 4GB GPU (Ollama) | `qwen3.5:2b` |
+| 16GB GPU (Ollama) | `gpt-oss:20b` |
+
+_Проверено: 2026-10-24. Постоянная память — файлы, поэтому работает
+одинаково на любом уровне._
+
+---
+
+## ✅ Checklist
+
+- [ ] Создал `DECISIONS.md` с решением и альтернативой
+- [ ] Привязал журнал к `AGENTS.md`
+- [ ] Новая сессия ответила по журналу без подсказок
+- [ ] Попросил агента дополнить журнал самому
 
 ---
 

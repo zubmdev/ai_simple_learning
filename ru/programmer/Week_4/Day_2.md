@@ -1,238 +1,139 @@
-# День 2: @Codebase Deep Dive 🔍
+# День 2: Скиллы — Повторяемые Сценарии 🧩
 
 **Трек:** 👨‍💻 Программист | **Время:** 20 минут
 
 ---
 
-## 🎯 Цель
+## 🎯 Миссия
 
-Освоить продвинутые техники @Codebase.
-
----
-
-## 🔬 Как работает @Codebase в Continue
-
-### Process
-
-```
-1. User types @Codebase + question
-2. Continue embeds question
-3. Vector search in indexed code
-4. Retrieve top-K chunks (default: 10)
-5. Add chunks to context
-6. LLM generates response
-```
-
-### Configuration
-
-```json
-{
-  "contextProviders": [
-    {
-      "name": "codebase",
-      "params": {
-        "nRetrieve": 20,  // Сколько чанков искать
-        "nFinal": 10      // Сколько передать в LLM
-      }
-    }
-  ]
-}
-```
+Написать скилл «добавить endpoint» (в Cline — воркфлоу) и выполнить его.
+Артефакт: файл скилла в репозитории + созданный по нему endpoint, прошедший
+все шаги плейбука.
 
 ---
 
-## 🛠️ Продвинутые техники
+## 💡 Правила говорят «каким быть», скилл — «как делать»
 
-### 1. Архитектурный анализ
+**Скилл** — плейбук: последовательность шагов и критерии приёмки, которые
+агент загружает, когда задача подходит под описание.
 
-```
-@Codebase
-
-Построй dependency graph:
-1. Какие модули зависят от каких?
-2. Есть ли circular dependencies?
-3. Самые связанные модули?
-4. Точка входа?
-
-Покажи диаграмму.
+```text
+AGENTS.md:  всегда type hints, кратко, русский   (постоянно)
+Скилл:      как добавить endpoint: шаги + проверка (по запросу)
 ```
 
-### 2. Поиск паттернов
+**Аналогия:** чек-лист пилота. Не нужно помнить последовательность — нужно
+открыть карту и идти по пунктам. И любой второй пилот может этим
+воспользоваться.
 
-```
-@Codebase
-
-Найди использование паттернов:
-- Repository pattern
-- Factory pattern
-- Singleton
-- Observer
-
-Где применяются? Корректно ли?
-```
-
-### 3. Security audit
-
-```
-@Codebase
-
-Найди security issues:
-- Hardcoded secrets
-- SQL injection risks
-- XSS vulnerabilities
-- Missing authentication
-- Insecure dependencies
-
-Prioritize by severity.
-```
-
-### 4. Performance analysis
-
-```
-@Codebase
-
-Найди performance bottlenecks:
-- N+1 queries
-- Missing indexes
-- Synchronous operations (should be async)
-- Large data transfers
-- Unnecessary loops
-
-Покажи файлы и строки.
-```
+Отличие от промпта: скилл живёт в репозитории, коммитится и работает для
+всей команды и для любого агента.
 
 ---
 
-## 📊 Комбинации
+## 🛠️ Как хранить
 
-### @Codebase + @Terminal
+### OpenCode: `.opencode/skills/`
 
-```
-@Codebase
-@Terminal
+Один скилл — одна папка с `SKILL.md`. Frontmatter с именем и описанием
+обязателен: по описанию агент понимает, когда скилл применять.
 
-Ошибка при запуске.
-Найди:
-1. Какой endpoint?
-2. Какая функция?
-3. Root cause?
-4. Fix?
-```
-
-### @Codebase + @Files
-
-```
-@Codebase
-@Files: config.py
-
-Найди все использования config из config.py.
-Проверь consistency.
-```
-
+```markdown
+# .opencode/skills/add-endpoint/SKILL.md
+---
+name: add-endpoint
+description: Добавляет CRUD endpoint в blog-api по шагам с проверкой
 ---
 
-## 🧠 Best Practices
+# Добавить endpoint
 
-### 1. Specific questions
-
-```
-❌ @Codebase "Что делать?"
-✅ @Codebase "Где функция process_payment и какие edge cases обрабатывает?"
-```
-
-### 2. Combine with context
-
-```
-@Codebase
-@Files: main.py
-
-В main.py используется get_user.
-Найди все места, где get_user вызывается.
-Проверь, везде ли обработан None.
+1. Прочитай AGENTS.md и существующие файлы app/api/.
+2. Опиши схему Pydantic (request/response) в app/models/.
+3. Добавь функцию роутера: type hints, async, статус-коды.
+4. Напиши pytest-тест на happy path + 404.
+5. Прогони pytest и покажи вывод.
+6. Остановись и покажи diff. Не коммить.
 ```
 
-### 3. Incremental refinement
+Вызов: упомяни скилл в задаче («добавь endpoint POST /comments по скиллу
+add-endpoint») или опиши задачу его словами — агент найдёт по описанию.
 
-```
-1. @Codebase "Где авторизация?" → Общий ответ
-2. @Codebase "Функция login в auth.py — покажи все вызовы" → Конкретный
-```
+### Cline: воркфлоу `.clinerules/workflows/`
 
----
+Тот же плейбук — обычный markdown-файл, вызывается командой:
 
-## ⚡ Performance Tips
-
-### Large projects (500+ files)
-
-```
-1. Фильтруй:
-   @Codebase в папке src/api (используй @Folder)
-
-2. Уменьши nRetrieve:
-   "nRetrieve": 10 → быстрее, но меньше контекста
-
-3. Используй API:
-   Groq быстрее для больших проектов
+```markdown
+# .clinerules/workflows/add-endpoint.md
+1. Прочитай AGENTS.md и существующие файлы app/api/.
+2. Опиши схему Pydantic в app/models/.
+3. Добавь функцию роутера: type hints, async, статус-коды.
+4. Напиши pytest-тест на happy path + 404.
+5. Прогони pytest и покажи вывод.
 ```
 
-### Local models (Ollama)
-
+```text
+/add-endpoint POST /comments
 ```
-4GB GPU:
-- Проекты до 50 файлов — OK
-- 50-200 файлов — медленно
-- 200+ файлов — используй API
 
-16GB GPU:
-- До 200 файлов — OK
-- 200-500 — медленно
-- 500+ — API
-```
+🚨 Синтаксис и пути могут отличаться между версиями инструментов — сверься
+с доками своего Cline/OpenCode, если файл не подхватился.
 
 ---
 
 ## 🛠️ Практика
 
-### Задание: Refactoring через @Codebase
+**1. Возьми проект из Дня 1** (`blog-api` с `AGENTS.md`).
 
-**1. Открой любой проект**
+**2. Создай скилл** по образцу выше — путь под свой инструмент.
 
-**2. Запусти:**
+**3. Выполни:**
 
-```
-@Codebase
-
-Найди все функции, которые:
-- Длиннее 30 строк
-- Принимают больше 3 аргументов
-- Не имеют docstring
-
-Создай список для рефакторинга.
+```text
+Добавь endpoint GET /posts/{id} по скиллу add-endpoint.
 ```
 
-**3. Рефактори:**
+**4. Проверь по пунктам плейбука:**
 
-```
-@Codebase
-@Files: [найденные файлы]
+- [ ] Схема описана до роутера?
+- [ ] Type hints и async на месте?
+- [ ] Тест написан и прогнан?
+- [ ] Агент остановился на diff, а не закоммитил сам?
 
-Рефакторинг:
-1. Разбей большие функции
-2. Уменьши количество аргументов
-3. Добавь docstrings
+**5. Проверь переиспользуемость:** вызови скилл второй раз для
+`POST /comments` в новой сессии. Если шаги соблюдаются без твоих
+напоминаний — скилл работает.
 
-Покажи изменения.
+---
+
+## 💡 Что выносить в скилл
+
+```text
+✅ Повторяющиеся работы: endpoint, миграция фичи, релизный чек-лист
+✅ Работы с критериями приёмки: тесты, прогоны, ревью
+❌ Разовые задачи — это обычный промпт
+❌ Всё подряд: 20 скиллов "на будущее" никто не использует
 ```
 
 ---
 
-## Checklist ✅
+## 💻 Уровни для практики
 
-- [ ] Понял как работает @Codebase
-- [ ] Освоил продвинутые техники
-- [ ] Попробовал комбинации
-- [ ] Усвоил best practices
-- [ ] Понял performance implications
+| Уровень | Модель |
+|---------|--------|
+| CPU + бесплатный API | Groq `openai/gpt-oss-20b` |
+| 4GB GPU (Ollama) | `qwen3.5:2b` |
+| 16GB GPU (Ollama) | `gpt-oss:20b` |
+
+_Проверено: 2026-10-24._
+
+---
+
+## ✅ Checklist
+
+- [ ] Создал скилл/воркфлоу и вызвал его
+- [ ] Агент прошёл по всем шагам плейбука
+- [ ] Повторил вызов в новой сессии — шаги соблюдаются
+- [ ] Скилл лежит в репозитории (готов к коммиту)
 
 ---
 
