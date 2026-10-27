@@ -37,7 +37,7 @@
 | **VRAM** (Video RAM) | GPU memory — more = stronger model | 8GB, 16GB VRAM |
 | **CPU** (Central Processing Unit) | Processor — main "brain" of computer | Intel i7, AMD Ryzen 5 |
 | **RAM** | Temporary computer memory | 16GB, 32GB RAM |
-| **Ollama** | Program for running AI on your computer | — |
+| **Ollama** | Program for running AI on your computer | `ollama run qwen3.5:2b` |
 | **CUDA** | NVIDIA technology for AI acceleration | — |
 
 ---
@@ -57,14 +57,34 @@
 
 ---
 
-## VS Code & Continue
+## AI Agents & Tools
 
 | Term | Simple Explanation | Example |
 |------|--------------------|---------|
-| **Extension** | Plugin for VS Code, adds functionality | Continue, Python |
+| **Extension** | Plugin for VS Code, adds functionality | Cline, Python |
 | **Workspace** | Project folder open in VS Code | — |
 | **Terminal (in VS Code)** | Built-in terminal in VS Code | `Ctrl + `` ` |
-| **Continue.dev** | Free AI assistant for VS Code | — |
+| **Cline** | AI agent for VS Code: reads files, edits code, and runs commands for your task | Describe the task in the Cline panel |
+| **OpenCode** | Terminal (CLI) AI agent — the next step for programmers | `opencode` in the project folder |
+| **`AGENTS.md`** | Project rules file for AI agents: what's allowed, what's forbidden, how to verify the result | `AGENTS.md` at the project root |
+
+---
+
+## Agent Loop & Harness
+
+| Term | Simple Explanation | Example |
+|------|--------------------|---------|
+| **Agent loop** | How an AI agent works: result → context → delegation → verification → recovery | You describe a task → agent edits code → you verify the diff |
+| **Context engineering** | Choosing what to show the agent: the right files, logs, rules — within the context budget | Give 2 relevant files instead of the whole project |
+| **Agent harness** | Everything that turns a model into an agent: rules, skills, memory, subagents, permissions | Cline + `AGENTS.md` + skills |
+| **Skill** | Ready-made playbook for a typical task, reusable | A "check code before commit" skill |
+| **Agent memory** | Agent notes: session-scoped (live in the chat) and persistent (saved between sessions) | File with project agreements |
+| **Subagent** | Mini-agent the main agent launches for a subtask to spare the main context | Subagent searches the whole project |
+| **MCP** (Model Context Protocol) | Protocol connecting tools, resources, and prompts to the agent; servers are local (stdio) or remote | MCP server with GitHub access |
+| **Approvals** | You confirm each agent action — least privilege principle | Click Approve before a file edit |
+| **Diff review** | Reviewing changes before approval: you see exactly what the agent will change | Red and green lines in the diff |
+| **Evals** | Checklist of "input → expected output" to verify the agent works | 5 tasks — all solved correctly |
+| **Three access tiers** | Three ways to run AI in the course: CPU + free API; 4GB GPU; 16GB GPU | CPU + Groq `openai/gpt-oss-20b`; 4GB GPU — Ollama `qwen3.5:2b`; 16GB GPU — Ollama `gpt-oss:20b`. Verified: 2026-10-24 |
 
 ---
 
@@ -77,6 +97,7 @@
 | **Chat** | Q&A mode in AI | — |
 | **Edit** | Code editing mode by AI | — |
 | **Autocomplete** | AI code completion | — |
+| **Creator module** | Applied module inside the Beginner track: AI-assisted content creation (reels, video, images) — a module, not a separate track | — |
 
 ---
 
