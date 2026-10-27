@@ -26,7 +26,7 @@ jobs:
         id: schedule
         run: |
           TODAY=$(date -u +%F)
-          FILES=$(awk -F'\t' -v d="$TODAY" '$1==d {printf "%s ", $3}' launch/schedule.tsv)
+          FILES=$(awk -F'\t' -v d="$TODAY" '$1==d && $5!="done" {printf "%s ", $3}' launch/schedule.tsv)
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
           echo "files=$(echo $FILES)" >> "$GITHUB_OUTPUT"
       - name: Publish

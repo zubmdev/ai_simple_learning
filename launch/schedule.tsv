@@ -1,7 +1,7 @@
-date	time_utc	file	note
-2026-10-26	06:00	ru/beginner/Day_0.md	софт-запуск; опубликован вручную 26.10
-2026-10-27	06:00	ru/beginner/Week_1/Day_1.md	полный запуск; Threads hook #1
-2026-10-28	06:00	ru/beginner/Week_1/Day_2.md	Threads hook #2
-2026-10-29	06:00	ru/beginner/Week_1/Day_3.md	Threads hook #3
-2026-10-30	06:00	ru/beginner/Week_1/Day_4.md	Threads hook #4
-2026-10-31	06:00	ru/beginner/Week_1/Day_5.md	Threads hook #5; итоги недели
+date	time_utc	file	note	status
+2026-10-26	06:00	ru/beginner/Day_0.md	софт-запуск; опубликован вручную 26.10	done
+2026-10-27	06:00	ru/beginner/Week_1/Day_1.md	полный запуск; Threads hook #1	done
+2026-10-28	06:00	ru/beginner/Week_1/Day_2.md	Threads hook #2	todo
+2026-10-29	06:00	ru/beginner/Week_1/Day_3.md	Threads hook #3	todo
+2026-10-30	06:00	ru/beginner/Week_1/Day_4.md	Threads hook #4	todo
+2026-10-31	06:00	ru/beginner/Week_1/Day_5.md	Threads hook #5; итоги недели	todo
