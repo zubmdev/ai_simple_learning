@@ -296,16 +296,44 @@ def cmd_dry_run(files, cfg, repo_root):
     return 1 if failed else 0
 
 
+def mark_published(files, schedule_path):
+    pending = {f.replace(os.sep, "/") for f in files}
+    path = Path(schedule_path)
+    if not path.exists():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    out = []
+    marked = []
+    for i, line in enumerate(lines):
+        cols = line.split("\t")
+        if (
+            i > 0
+            and len(cols) >= 3
+            and cols[2] in pending
+            and (len(cols) < 5 or cols[4] != "done")
+        ):
+            while len(cols) < 5:
+                cols.append("")
+            cols[4] = "done"
+            line = "\t".join(cols)
+            marked.append(cols[2])
+        out.append(line)
+    if marked:
+        path.write_text("\n".join(out) + "\n", encoding="utf-8")
+    return marked
+
+
 def cmd_publish(files, cfg, repo_root):
     missing = [
         name for name in ("BOT_TOKEN", "CHANNEL_ID", "REPO_URL") if not cfg.get(name)
     ]
     if missing:
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
-        return 2
+        return 2, []
     token = cfg["BOT_TOKEN"]
     chat_id = cfg["CHANNEL_ID"]
     (raw_base, blob_base), _ = _resolve_bases(cfg)
+    published = []
     failed = 0
     for md_rel in files:
         md_rel = os.path.normpath(md_rel).replace(os.sep, "/")
@@ -337,7 +365,8 @@ def cmd_publish(files, cfg, repo_root):
             token, chat_id, path.name, src.encode("utf-8"), caption
         )
         print(f"  приложен исходник (message_id {_message_label(response)})")
-    return 1 if failed else 0
+        published.append(md_rel)
+    return (1 if failed else 0), published
 
 
 def build_parser():
@@ -360,12 +389,20 @@ def build_parser():
         "--discuss-url",
         help="URL кнопки «Обсудить» (переопределяет DISCUSS_URL из .env)",
     )
+    parser.add_argument(
+        "--mark-published",
+        action="store_true",
+        help="после успешной отправки пометить строки в launch/schedule.tsv как done",
+    )
     parser.add_argument("--env", default=".env", help="путь к .env-файлу")
     return parser
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.mark_published and not args.publish:
+        parser.error("--mark-published работает только вместе с --publish")
     cfg = load_env(args.env)
     if args.repo_url:
         cfg["REPO_URL"] = args.repo_url
@@ -379,7 +416,12 @@ def main(argv=None):
             return cmd_check(args.files, cfg, repo_root)
         if args.dry_run:
             return cmd_dry_run(args.files, cfg, repo_root)
-        return cmd_publish(args.files, cfg, repo_root)
+        code, published = cmd_publish(args.files, cfg, repo_root)
+        if args.mark_published and published:
+            schedule = Path(repo_root, "launch", "schedule.tsv")
+            for md_rel in mark_published(published, schedule):
+                print(f"  launch/schedule.tsv: помечено done ({md_rel})")
+        return code
     except RuntimeError as error:
         print(f"ОШИБКА: {mask(str(error), cfg.get('BOT_TOKEN', ''))}")
         return 2

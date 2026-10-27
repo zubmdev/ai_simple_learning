@@ -7,7 +7,7 @@ from unittest import mock
 from pathlib import Path
 
 from pipeline import publisher
-from pipeline.publisher import check_links, load_env, mask, repo_bases
+from pipeline.publisher import check_links, load_env, mark_published, mask, repo_bases
 
 
 class LoadEnv(unittest.TestCase):
@@ -186,8 +186,9 @@ class PublishButtons(unittest.TestCase):
             with mock.patch.object(
                 publisher, "_post", side_effect=self.capture_into(payloads)
             ):
-                code = publisher.cmd_publish(["day.md"], cfg, root)
+                code, published = publisher.cmd_publish(["day.md"], cfg, root)
             self.assertEqual(code, 0)
+            self.assertEqual(published, ["day.md"])
             return payloads
 
     def test_buttons_sent_as_separate_message(self):
@@ -263,6 +264,121 @@ class LoadEnvKnownKeys(unittest.TestCase):
             else:
                 os.environ["OWNER_CHAT_ID"] = old
             os.unlink(path)
+
+
+class MarkPublished(unittest.TestCase):
+    HEADER = "date\ttime_utc\tfile\tnote\tstatus\n"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.tsv = Path(self.tmp.name) / "schedule.tsv"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def write(self, body):
+        self.tsv.write_text(self.HEADER + body, encoding="utf-8")
+
+    def read(self):
+        return self.tsv.read_text(encoding="utf-8")
+
+    def test_marks_only_matching_rows(self):
+        self.write(
+            "2026-10-27\t06:00\td1.md\ta\ttodo\n2026-10-28\t06:00\td2.md\tb\ttodo\n"
+        )
+        self.assertEqual(mark_published(["d1.md"], self.tsv), ["d1.md"])
+        text = self.read()
+        self.assertIn("d1.md\ta\tdone\n", text)
+        self.assertIn("d2.md\tb\ttodo\n", text)
+        self.assertTrue(text.startswith(self.HEADER))
+
+    def test_pads_missing_status_column(self):
+        self.tsv.write_text(
+            "date\ttime_utc\tfile\tnote\n2026-10-27\t06:00\td1.md\ta\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(mark_published(["d1.md"], self.tsv), ["d1.md"])
+        self.assertIn("2026-10-27\t06:00\td1.md\ta\tdone\n", self.read())
+
+    def test_already_done_not_remarked(self):
+        body = "2026-10-27\t06:00\td1.md\ta\tdone\n"
+        self.write(body)
+        self.assertEqual(mark_published(["d1.md"], self.tsv), [])
+        self.assertEqual(self.read(), self.HEADER + body)
+
+    def test_missing_schedule_file_noop(self):
+        self.assertEqual(mark_published(["d1.md"], self.tsv), [])
+        self.assertFalse(self.tsv.exists())
+
+    def test_unrelated_file_untouched(self):
+        self.write("2026-10-27\t06:00\td1.md\ta\ttodo\n")
+        self.assertEqual(mark_published(["other.md"], self.tsv), [])
+        self.assertIn("d1.md\ta\ttodo\n", self.read())
+
+
+class MarkPublishedFlag(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.old_cwd = os.getcwd()
+        os.chdir(self.tmp.name)
+
+    def tearDown(self):
+        os.chdir(self.old_cwd)
+        self.tmp.cleanup()
+
+    def env_and_schedule(self, files):
+        Path(".env").write_text("BOT_TOKEN=T\nCHANNEL_ID=@c\n", encoding="utf-8")
+        Path("launch").mkdir()
+        Path("launch", "schedule.tsv").write_text(
+            "date\ttime_utc\tfile\tnote\tstatus\n" + files, encoding="utf-8"
+        )
+
+    def test_requires_publish_mode(self):
+        with self.assertRaises(SystemExit):
+            publisher.main(["--check", "--mark-published", "d.md"])
+
+    def test_publish_marks_rows_and_returns_zero(self):
+        self.env_and_schedule("2026-10-27\t06:00\tday.md\tx\ttodo\n")
+        Path("day.md").write_text("Привет", encoding="utf-8")
+        with mock.patch.object(
+            publisher, "_post", return_value={"result": {"message_id": 1}}
+        ):
+            code = publisher.main(
+                [
+                    "--publish",
+                    "--mark-published",
+                    "day.md",
+                    "--repo-url",
+                    "https://github.com/a/b",
+                ]
+            )
+        self.assertEqual(code, 0)
+        text = Path("launch", "schedule.tsv").read_text(encoding="utf-8")
+        self.assertIn("day.md\tx\tdone\n", text)
+
+    def test_partial_failure_marks_only_published(self):
+        self.env_and_schedule(
+            "2026-10-27\t06:00\ta.md\tx\ttodo\n2026-10-27\t07:00\tb.md\ty\ttodo\n"
+        )
+        Path("a.md").write_text("Ок", encoding="utf-8")
+        Path("b.md").write_text("[х](./nope.md)", encoding="utf-8")
+        with mock.patch.object(
+            publisher, "_post", return_value={"result": {"message_id": 1}}
+        ):
+            code = publisher.main(
+                [
+                    "--publish",
+                    "--mark-published",
+                    "a.md",
+                    "b.md",
+                    "--repo-url",
+                    "https://github.com/a/b",
+                ]
+            )
+        self.assertEqual(code, 1)
+        text = Path("launch", "schedule.tsv").read_text(encoding="utf-8")
+        self.assertIn("a.md\tx\tdone\n", text)
+        self.assertIn("b.md\ty\ttodo\n", text)
 
 
 if __name__ == "__main__":

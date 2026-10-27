@@ -3,6 +3,7 @@ name: publish
 on:
   schedule:
     - cron: "0 6 * * *"
+    - cron: "41 8 * * *"
   workflow_dispatch:
     inputs:
       files:
@@ -11,7 +12,7 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -42,7 +43,23 @@ jobs:
             FILES="${{ steps.schedule.outputs.files }}"
           fi
           if [ -z "$FILES" ]; then
-            echo "на ${{ steps.schedule.outputs.today }} в launch/schedule.tsv ничего не запланировано"
+            echo "на $(date -u +%F) в launch/schedule.tsv ничего не запланировано или уже опубликовано"
             exit 0
           fi
-          python3 -m pipeline.publisher --publish $FILES
+          MARK=""
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            MARK="--mark-published"
+          fi
+          python3 -m pipeline.publisher --publish $FILES $MARK
+      - name: Commit schedule
+        if: ${{ always() && github.event_name == 'schedule' }}
+        run: |
+          if git diff --quiet launch/schedule.tsv; then
+            echo "launch/schedule.tsv без изменений"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add launch/schedule.tsv
+          git commit -m "publish: mark $(date -u +%F) done in launch/schedule.tsv"
+          git push
