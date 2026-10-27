@@ -37,7 +37,8 @@
 
 Автоматически:
 
-- 06:00 UTC — GitHub Actions `publish` берёт из [launch/schedule.tsv](../../launch/schedule.tsv) строку с сегодняшней датой (UTC) и публикует урок: пост с кнопками на первой части + приложенный `.md`.
+- 06:00 UTC — GitHub Actions `publish` берёт из [launch/schedule.tsv](../../launch/schedule.tsv) строку с сегодняшней датой (UTC) и статусом не `done`, публикует урок (пост с кнопками на первой части + приложенный `.md`) и помечает строку `done` — `github-actions[bot]` коммитит изменение расписания.
+- 08:41 UTC — повторный запуск `publish` как страховка: если утренний прогон упал, он опубликует и пометит `done`; если строка уже `done` — ничего не сделает.
 - 06:30 UTC — `snapshot` дописывает число подписчиков в `docs/metrics/subscribers.log` и шлёт дельту в личку владельцу.
 
 Вручную (10–15 минут):
@@ -60,14 +61,15 @@
 
 ## Аварийные процедуры
 
-- **Опубликовать сейчас, вне расписания:** Actions → `publish` → Run workflow → в `files` указать путь, например `ru/beginner/Week_1/Day_2.md`. Или локально: `python3 -m pipeline.publisher --publish ru/beginner/Week_1/Day_2.md`.
-- **Изменить расписание:** отредактировать `launch/schedule.tsv` и запушить; cron читает файл в момент запуска.
-- **Двойная/кривая публикация:** удалить пост в канале вручную, перезапустить `publish` с нужным файлом.
+- **Опубликовать сейчас, вне расписания:** Actions → `publish` → Run workflow → в `files` указать путь, например `ru/beginner/Week_1/Day_2.md`. Или локально: `python3 -m pipeline.publisher --publish ru/beginner/Week_1/Day_2.md`. Ручной запуск **не трогает** расписание: если опубликовал строку из `launch/schedule.tsv`, сразу поставь ей `done` и запушь (или запусти локально с `--mark-published` и закоммить), иначе retry-cron в 08:41 UTC опубликует её повторно.
+- **Утренний cron не сработал:** ничего не делай — в 08:41 UTC retry-cron опубликует сам. Чтобы не ждать, запусти `publish` вручную с пустым `files` (возьмёт сегодняшние строки не-`done`, но не пометит их — см. пункт выше).
+- **Изменить расписание:** отредактировать `launch/schedule.tsv` и запушить; cron читает файл в момент запуска. Строки со статусом `done` не публикуются повторно.
+- **Двойная/кривая публикация:** удалить пост в канале вручную, перезапустить `publish` с нужным файлом; перед этим проверь, что строка в `launch/schedule.tsv` помечена `done`, иначе cron её повторит.
 - **Бот лежит:** новые читатели всё равно заходят в канал по поиску/обычной ссылке — страдает только атрибуция. Поднять сервис на PaaS, при необходимости повторить `--set-webhook`.
 - **Токен утёк:** BotFather → `/revoke` → обновить `BOT_TOKEN` в GitHub Secrets и на PaaS.
 
 ## Что где лежит
 
 - `pipeline/bot.py` — гейт; `pipeline/snapshot.py` — снимок подписчиков; `pipeline/publisher.py` — публикация уроков; тесты — `python3 -m unittest discover -s pipeline`.
-- `launch/schedule.tsv` — календарь публикаций (даты в UTC).
-- `.github/workflows/publish.yml`, `.github/workflows/snapshot.yml` — кроны 06:00/06:30 UTC.
+- `launch/schedule.tsv` — календарь публикаций (даты в UTC; 5-я колонка `status`: `todo`/`done`, `done` не публикуется повторно).
+- `.github/workflows/publish.yml`, `.github/workflows/snapshot.yml` — кроны publish 06:00 и 08:41 UTC, snapshot 06:30 UTC.
