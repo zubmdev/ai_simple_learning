@@ -143,14 +143,17 @@ Full decision: [ADR-0004](./adr/0004-legal-and-payments.md).
 
 ### P1: Content refresh (Nov 15-Dec 26)
 
-- Rewrite Weeks 1-5 around the agent loop, specs, context engineering, harness, and MCP safety.
-- Update Weeks 6-8 for agentic build, evals, diff review, deployment, cost, and capstone.
-- Add the Creator module and free lead magnet.
-- Add new lessons: `AGENTS.md`/rules, skills, memory, subagents, permissions, MCP security, evals, cost, sandboxing.
-- Update both glossaries with the new vocabulary.
-- Test Weeks 1-4 with 3-5 beginners; record time, blockers, and first-artifact time.
-- Grow to 100 subscribers; keep the 2-3 consultations/week cadence (≥10 sessions).
-- Log every consultation (problem type, repeat request) to prepare the pricing step.
+**Status 2026-10-28:** all 8 beginner weeks and programmer Weeks 1-5 are rewritten (content commits `c7d6c45..1ba49b5` on `main`, unpushed). Programmer Weeks 6-8 keep their pre-refresh text: only Daily Missions were added there, the full 2026 rewrite is still open. Learner testing and growth items have not started.
+
+- [x] Rewrite Weeks 1-5 around the agent loop, specs, context engineering, harness, and MCP safety.
+- [ ] Update Weeks 6-8 for agentic build, evals, diff review, deployment, cost, and capstone. (beginner done; programmer Weeks 6-8 rewrite remains)
+- [x] Add the Creator module and free lead magnet. (Creator module lives inside beginner Week 6; Day 0 reviewed in P0)
+- [x] Add the new topics in place: `AGENTS.md`/rules, skills, memory, subagents, permissions, MCP security, evals, cost.
+- [ ] Add sandboxing coverage (not yet in any lesson).
+- [x] Update both glossaries with the new vocabulary.
+- [ ] Test Weeks 1-4 with 3-5 beginners; record time, blockers, and first-artifact time.
+- [ ] Grow to 100 subscribers; keep the 2-3 consultations/week cadence (≥10 sessions).
+- [ ] Log every consultation (problem type, repeat request) to prepare the pricing step.
 
 ### P2: Scale and consolidate (Dec 27-Jan 22)
 
@@ -228,7 +231,8 @@ Use one weekly review: what shipped, what blocked, what metric moved. Keep a dec
 - [ ] Launch the Telegram channel: pinned post + bot form.
 - [ ] Start the Threads feed; open 2-3 consultation slots (60 BYN) and run the first sessions.
 - [x] Fix the P0 links and the missing Day 3.
-- [ ] Rewrite Week 1 setup with Cline; test with 3 beginners.
+- [x] Rewrite Week 1 setup with Cline (both tracks).
+- [ ] Test Week 1 with 3 beginners.
 
 ## 12. Open implementation choices
 
