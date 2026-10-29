@@ -26,6 +26,20 @@ def read_last_count(path):
         return None
 
 
+def read_last_date(path):
+    log_path = Path(path)
+    if not log_path.exists():
+        return None
+    lines = [
+        line
+        for line in log_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if not lines:
+        return None
+    return lines[-1].split("\t")[0][:10]
+
+
 def append_count(path, count, now=None):
     moment = now or datetime.now(timezone.utc)
     log_path = Path(path)
@@ -52,6 +66,9 @@ def main(argv=None):
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
         return 2
     token = cfg["BOT_TOKEN"]
+    if read_last_date(args.log) == datetime.now(timezone.utc).strftime("%Y-%m-%d"):
+        print("сегодня запись уже есть — пропускаю")
+        return 0
     try:
         response = api(token, "getChatMemberCount", {"chat_id": cfg["CHANNEL_ID"]})
         count = response["result"]

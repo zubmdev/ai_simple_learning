@@ -58,7 +58,7 @@ def start_update(chat_id=500, text="/start threads", first_name="Аня"):
         "message": {
             "message_id": 10,
             "chat": {"id": chat_id},
-            "from": {"first_name": first_name},
+            "from": {"id": 5001, "first_name": first_name},
             "text": text,
         }
     }
@@ -77,7 +77,9 @@ class HandleStart(unittest.TestCase):
             "https://t.me/+abc",
         )
         self.assertEqual(owner_call.args[2]["chat_id"], "100")
-        self.assertEqual(owner_call.args[2]["text"], "🚀 /start source=threads — Аня")
+        self.assertEqual(
+            owner_call.args[2]["text"], "🚀 /start source=threads (id=5001)"
+        )
 
     def test_no_invite_omits_markup(self):
         cfg = {"BOT_TOKEN": "T", "OWNER_CHAT_ID": "100"}
@@ -113,13 +115,66 @@ class HandleText(unittest.TestCase):
         api_mock.assert_not_called()
 
 
+class HandleJoins(unittest.TestCase):
+    def join_update(self, first_name="Вика", members=None):
+        if members is None:
+            members = [{"id": 77, "first_name": first_name}]
+        return {
+            "message": {
+                "message_id": 11,
+                "chat": {"id": -100123, "type": "supergroup"},
+                "from": {"id": 77, "first_name": first_name},
+                "new_chat_members": members,
+            }
+        }
+
+    def test_join_notifies_owner_and_greets_group(self):
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(self.join_update(), CFG)
+        owner_call, group_call = api_mock.call_args_list
+        self.assertEqual(owner_call.args[2]["chat_id"], "100")
+        self.assertEqual(owner_call.args[2]["text"], "👋 новый участник: id=77")
+        self.assertEqual(group_call.args[2]["chat_id"], -100123)
+        self.assertEqual(group_call.args[2]["text"], bot.GROUP_GREETING)
+
+    def test_bot_members_skipped(self):
+        update = self.join_update(members=[{"id": 78, "is_bot": True}])
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(update, CFG)
+        api_mock.assert_not_called()
+
+    def test_large_batch_greets_nothing(self):
+        update = self.join_update(
+            members=[{"id": i} for i in range(bot.JOIN_GREET_BATCH_LIMIT + 1)]
+        )
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(update, CFG)
+        (owner_call,) = api_mock.call_args_list
+        self.assertEqual(owner_call.args[2]["chat_id"], "100")
+
+    def test_join_without_owner_greets_group(self):
+        cfg = {"BOT_TOKEN": "T"}
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(self.join_update(), cfg)
+        (group_call,) = api_mock.call_args_list
+        self.assertEqual(group_call.args[2]["chat_id"], -100123)
+
+    def test_empty_members_not_forwarded(self):
+        update = self.join_update()
+        update["message"]["new_chat_members"] = []
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(update, CFG)
+        (call,) = api_mock.call_args_list
+        self.assertEqual(call.args[1], "forwardMessage")
+
+
 class HandleCallback(unittest.TestCase):
     def callback(self, data):
         return {
             "callback_query": {
                 "id": "cb1",
                 "data": data,
-                "from": {"first_name": "Боря"},
+                "from": {"id": 6001, "first_name": "Боря"},
             }
         }
 
@@ -130,7 +185,7 @@ class HandleCallback(unittest.TestCase):
         self.assertEqual(answer.args[1], "answerCallbackQuery")
         self.assertEqual(owner.args[1], "sendMessage")
         self.assertEqual(
-            owner.args[2]["text"], "🎚 опыт: novice (source=threads) — Боря"
+            owner.args[2]["text"], "🎚 опыт: novice (source=threads) (id=6001)"
         )
 
     def test_malformed_data_answered_without_log(self):
@@ -149,6 +204,34 @@ class UnknownUpdate(unittest.TestCase):
     def test_ignored(self):
         with mock.patch.object(bot, "api") as api_mock:
             handle_update({"edited_message": {}}, CFG)
+        api_mock.assert_not_called()
+
+
+class HandleReactionCount(unittest.TestCase):
+    def count_update(self):
+        return {
+            "message_reaction_count": {
+                "chat": {"id": -100200},
+                "message_id": 45,
+                "date": 1790000000,
+                "reactions": [
+                    {"type": {"type": "emoji", "emoji": "👍"}, "total_count": 3},
+                    {"type": {"type": "emoji", "emoji": "❤"}, "total_count": 2},
+                ],
+            }
+        }
+
+    def test_owner_gets_aggregate_line(self):
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(self.count_update(), CFG)
+        (call,) = api_mock.call_args_list
+        self.assertEqual(call.args[2]["chat_id"], "100")
+        self.assertEqual(call.args[2]["text"], "📊 Пост 45: 5 реакций")
+
+    def test_without_owner_ignored(self):
+        cfg = {"BOT_TOKEN": "T"}
+        with mock.patch.object(bot, "api") as api_mock:
+            handle_update(self.count_update(), cfg)
         api_mock.assert_not_called()
 
 
@@ -218,6 +301,19 @@ class WebhookServer(unittest.TestCase):
                 "/webhook", json.dumps(start_update()).encode("utf-8"), secret="SEKRIT"
             )
         self.assertEqual(status, 200)
+
+    def test_unexpected_handler_error_still_200(self):
+        with mock.patch.object(bot, "handle_update", side_effect=ValueError("сбой")):
+            status, _ = self.post(
+                "/webhook", json.dumps(start_update()).encode("utf-8"), secret="SEKRIT"
+            )
+        self.assertEqual(status, 200)
+
+
+class CmdServe(unittest.TestCase):
+    def test_missing_webhook_secret_exit_2(self):
+        cfg = {"BOT_TOKEN": "T", "CHANNEL_INVITE_URL": "https://t.me/+abc"}
+        self.assertEqual(bot.cmd_serve(cfg, "127.0.0.1", 0), 2)
 
 
 if __name__ == "__main__":

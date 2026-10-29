@@ -5,7 +5,7 @@ from unittest import mock
 from pathlib import Path
 
 from pipeline import snapshot
-from pipeline.snapshot import append_count, read_last_count
+from pipeline.snapshot import append_count, read_last_count, read_last_date
 
 
 class ReadLastCount(unittest.TestCase):
@@ -37,6 +37,20 @@ class AppendCount(unittest.TestCase):
             self.assertEqual(
                 path.read_text(encoding="utf-8"), "2026-11-01T06:30:00Z\t42\n"
             )
+
+
+class ReadLastDate(unittest.TestCase):
+    def test_missing_file_none(self):
+        self.assertIsNone(read_last_date("/nonexistent/sub.log"))
+
+    def test_last_line_date(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "sub.log")
+            path.write_text(
+                "2026-11-01T06:30:00Z\t10\n2026-11-02T18:00:00Z\t12\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(read_last_date(path), "2026-11-02")
 
 
 class Main(unittest.TestCase):
@@ -74,6 +88,16 @@ class Main(unittest.TestCase):
             code, sent = self.run_main(log)
             self.assertEqual(code, 0)
             self.assertEqual(sent[0]["text"], "📈 Подписчиков: 1240")
+
+    def test_same_day_rerun_skips(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp, "sub.log")
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            log.write_text(f"{today}T06:30:00Z\t1240\n", encoding="utf-8")
+            code, sent = self.run_main(log)
+            self.assertEqual(code, 0)
+            self.assertEqual(sent, [])
+            self.assertEqual(len(log.read_text(encoding="utf-8").splitlines()), 1)
 
     def test_missing_config(self):
         with mock.patch.object(snapshot, "load_env", return_value={}):

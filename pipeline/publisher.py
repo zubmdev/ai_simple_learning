@@ -27,6 +27,13 @@ PLACEHOLDER_BLOB = "https://github.com/PLACEHOLDER/course/blob/main"
 SCHEDULE_FILE_COL = 2
 SCHEDULE_STATUS_COL = 4
 
+SUBSCRIBERS_LOG = Path("docs/metrics/subscribers.log")
+
+WELCOME_LINE = (
+    "👋 За сутки канал пополнили ещё {n} человек. "
+    "Застряли на миссии урока — напишите боту, разберём."
+)
+
 _MD_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 
 CONFIG_KEYS = frozenset(
@@ -218,13 +225,35 @@ def _resolve_bases(cfg):
     return RepoBases(PLACEHOLDER_RAW, PLACEHOLDER_BLOB, True)
 
 
-def _prepare(md_rel, repo_root, raw_base, blob_base):
+def growth_footer(log_path):
+    path = Path(log_path)
+    if not path.exists():
+        return None
+    lines = [
+        line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+    if len(lines) < 2:
+        return None
+    try:
+        previous = int(lines[-2].split("\t")[1])
+        last = int(lines[-1].split("\t")[1])
+    except (IndexError, ValueError):
+        return None
+    delta = last - previous
+    if delta <= 0:
+        return None
+    return WELCOME_LINE.format(n=delta)
+
+
+def _prepare(md_rel, repo_root, raw_base, blob_base, footer=None):
     path = Path(repo_root, *md_rel.split("/"))
     src = path.read_text(encoding="utf-8")
     problems = []
     for target in check_links(md_rel, repo_root):
         problems.append(f"битая ссылка: {target} (файл не найден)")
     converted = convert(src, md_rel, raw_base, blob_base)
+    if footer:
+        converted = converted.rstrip() + "\n\n" + footer
     problems.extend(validate(converted))
     parts = split_message(converted)
     for part in parts:
@@ -245,7 +274,7 @@ def _report(md_rel, parts, problems, converted):
         print(f"  ⚠ {problem}")
 
 
-def _process(files, repo_root, bases, on_report=None, on_ready=None):
+def _process(files, repo_root, bases, on_report=None, on_ready=None, footer=None):
     failed = 0
     for md_rel in files:
         md_rel = norm_rel(md_rel)
@@ -255,7 +284,7 @@ def _process(files, repo_root, bases, on_report=None, on_ready=None):
             failed += 1
             continue
         src, converted, parts, problems = _prepare(
-            md_rel, repo_root, bases.raw_base, bases.blob_base
+            md_rel, repo_root, bases.raw_base, bases.blob_base, footer
         )
         _report(md_rel, parts, problems, converted)
         if on_report:
@@ -336,6 +365,9 @@ def cmd_publish(files, cfg, repo_root):
     token = cfg["BOT_TOKEN"]
     chat_id = cfg["CHANNEL_ID"]
     bases = _resolve_bases(cfg)
+    footer = growth_footer(Path(repo_root, SUBSCRIBERS_LOG))
+    if footer:
+        print(f"  приветственная строка: {footer}")
     published = []
 
     def on_ready(md_rel, path, src, parts, bases):
@@ -362,7 +394,7 @@ def cmd_publish(files, cfg, repo_root):
         published.append(md_rel)
         return True
 
-    failed = _process(files, repo_root, bases, on_ready=on_ready)
+    failed = _process(files, repo_root, bases, on_ready=on_ready, footer=footer)
     return (1 if failed else 0), published
 
 

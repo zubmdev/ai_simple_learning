@@ -67,3 +67,11 @@ _Avoid_: UTM link, tracking link.
 **Join snapshot**:
 The daily subscriber-count record appended to docs/metrics/subscribers.log by pipeline/snapshot.py (getChatMemberCount), with the delta DM'd to the owner.
 _Avoid_: analytics, dashboard, stats export.
+
+**Welcome line**:
+The count-only growth line («За сутки канал пополнили ещё N человек…») that the publisher appends to the lesson post when the last two Join snapshot rows show a positive delta. No names, no per-person data.
+_Avoid_: welcome message (the bot's greeting), growth post, announcement.
+
+**Join batch greeting**:
+The single generic greeting the gateway bot sends to the chat when 1–3 humans join in one update; bot joins and batches over 3 get nothing, and the owner receives an id-only line for the batch.
+_Avoid_: personal welcome, member announcement.

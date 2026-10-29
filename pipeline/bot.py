@@ -8,16 +8,29 @@ from pipeline.publisher import load_env, mask, missing_config
 from pipeline.telegram import post_json as api
 
 EXP_PREFIX = "exp:"
-ALLOWED_UPDATES = ["message", "callback_query"]
+ALLOWED_UPDATES = [
+    "message",
+    "callback_query",
+    "message_reaction_count",
+]
+JOIN_GREET_BATCH_LIMIT = 3
 
 GREETING = (
     "Привет! 👋 Это бот бесплатного курса «AI - это просто».\n\n"
     "Каждый день в 09:00 в канале выходит один урок: короткая теория, "
-    "практика и ежедневная миссия. Нажимай кнопку ниже — все уроки уже там."
+    "практика и ежедневная миссия. Нажимай кнопку ниже — все уроки уже там.\n\n"
+    "О данных: источник перехода и отметка опыта хранятся в переписке владельца "
+    "канала и нужны только для подсчёта подписчиков."
 )
 
-OWNER_TEXT_START = "🚀 /start source={source}{name}"
-OWNER_TEXT_EXP = "🎚 опыт: {tag} (source={source}){name}"
+GROUP_GREETING = (
+    "Добро пожаловать! 👋 Вопросы по урокам — в комментариях под постами канала."
+)
+
+OWNER_TEXT_START = "🚀 /start source={source}{id}"
+OWNER_TEXT_EXP = "🎚 опыт: {tag} (source={source}){id}"
+OWNER_TEXT_JOIN = "👋 новый участник: {id}"
+OWNER_TEXT_REACTIONS = "📊 Пост {message_id}: {total} реакций"
 
 
 def parse_start(text):
@@ -32,15 +45,26 @@ def parse_start(text):
     return "direct"
 
 
-def display_name(user):
+def id_suffix(user):
     if not isinstance(user, dict):
         return ""
-    return user.get("first_name") or user.get("username") or ""
+    user_id = user.get("id")
+    return f" (id={user_id})" if user_id is not None else ""
 
 
-def name_suffix(user):
-    name = display_name(user)
-    return f" — {name}" if name else ""
+def human_members(members):
+    return [
+        user for user in members if isinstance(user, dict) and not user.get("is_bot")
+    ]
+
+
+def reaction_total(count_update):
+    reactions = count_update.get("reactions")
+    if not isinstance(reactions, list):
+        return 0
+    return sum(
+        item.get("total_count", 0) for item in reactions if isinstance(item, dict)
+    )
 
 
 def start_keyboard(invite_url, source):
@@ -61,6 +85,29 @@ def handle_update(update, cfg):
     if isinstance(message, dict):
         chat_id = message.get("chat", {}).get("id")
         text = message.get("text") or ""
+        members = message.get("new_chat_members")
+        if isinstance(members, list) and members:
+            humans = human_members(members)
+            if humans:
+                ids = " ".join(
+                    f"id={user['id']}" for user in humans if user.get("id") is not None
+                )
+                if owner and ids:
+                    api(
+                        token,
+                        "sendMessage",
+                        {
+                            "chat_id": owner,
+                            "text": OWNER_TEXT_JOIN.format(id=ids),
+                        },
+                    )
+                if chat_id is not None and len(humans) <= JOIN_GREET_BATCH_LIMIT:
+                    api(
+                        token,
+                        "sendMessage",
+                        {"chat_id": chat_id, "text": GROUP_GREETING},
+                    )
+            return
         source = parse_start(text)
         if source:
             payload = {"chat_id": chat_id, "text": GREETING}
@@ -75,7 +122,7 @@ def handle_update(update, cfg):
                     {
                         "chat_id": owner,
                         "text": OWNER_TEXT_START.format(
-                            source=source, name=name_suffix(message.get("from"))
+                            source=source, id=id_suffix(message.get("from"))
                         ),
                     },
                 )
@@ -107,12 +154,27 @@ def handle_update(update, cfg):
                     {
                         "chat_id": owner,
                         "text": OWNER_TEXT_EXP.format(
-                            source=source,
                             tag=tag,
-                            name=name_suffix(callback.get("from")),
+                            source=source,
+                            id=id_suffix(callback.get("from")),
                         ),
                     },
                 )
+
+    reactions = update.get("message_reaction_count")
+    if isinstance(reactions, dict) and owner:
+        message_id = reactions.get("message_id")
+        if message_id is not None:
+            api(
+                token,
+                "sendMessage",
+                {
+                    "chat_id": owner,
+                    "text": OWNER_TEXT_REACTIONS.format(
+                        message_id=message_id, total=reaction_total(reactions)
+                    ),
+                },
+            )
 
 
 def build_handler(cfg, secret):
@@ -144,7 +206,7 @@ def build_handler(cfg, secret):
                 return
             try:
                 handle_update(update, cfg)
-            except RuntimeError as error:
+            except Exception as error:
                 sys.stderr.write(f"webhook: {error}\n")
             self._respond(200)
 
@@ -155,7 +217,7 @@ def build_handler(cfg, secret):
 
 
 def cmd_serve(cfg, host, port):
-    missing = missing_config(cfg, ("BOT_TOKEN", "CHANNEL_INVITE_URL"))
+    missing = missing_config(cfg, ("BOT_TOKEN", "CHANNEL_INVITE_URL", "WEBHOOK_SECRET"))
     if missing:
         print(f"не заданы обязательные переменные: {', '.join(missing)}")
         return 2

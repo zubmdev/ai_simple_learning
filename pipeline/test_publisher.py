@@ -146,6 +146,7 @@ class BuildReplyMarkup(unittest.TestCase):
 
     def test_both_rows(self):
         markup = publisher.build_reply_markup("https://x", "https://y")
+        assert markup is not None
         self.assertEqual(len(markup["inline_keyboard"]), 2)
 
 
@@ -169,6 +170,36 @@ class SendButtons(unittest.TestCase):
         self.assertNotIn("reply_markup", payload)
 
 
+class GrowthFooter(unittest.TestCase):
+    def footer(self, content):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp, "sub.log")
+            path.write_text(content, encoding="utf-8")
+            return publisher.growth_footer(path)
+
+    def test_missing_file_none(self):
+        self.assertIsNone(publisher.growth_footer("/nonexistent/sub.log"))
+
+    def test_single_row_none(self):
+        self.assertIsNone(self.footer("2026-11-01T06:30:00Z\t10\n"))
+
+    def test_positive_delta_formatted(self):
+        footer = self.footer("2026-11-01T06:30:00Z\t10\n2026-11-02T06:30:00Z\t13\n")
+        assert footer is not None
+        self.assertIn("ещё 3 человек", footer)
+
+    def test_zero_and_negative_none(self):
+        self.assertIsNone(
+            self.footer("2026-11-01T06:30:00Z\t10\n2026-11-02T06:30:00Z\t10\n")
+        )
+        self.assertIsNone(
+            self.footer("2026-11-01T06:30:00Z\t10\n2026-11-02T06:30:00Z\t8\n")
+        )
+
+    def test_garbage_none(self):
+        self.assertIsNone(self.footer("мусор\nещё мусор\n"))
+
+
 class PublishButtons(unittest.TestCase):
     def capture_into(self, payloads):
         def capture(token, method, data, headers):
@@ -180,10 +211,28 @@ class PublishButtons(unittest.TestCase):
 
         return capture
 
+    def test_welcome_line_appended_when_growing(self):
+        payloads = self.publish(
+            {
+                "BOT_TOKEN": "T",
+                "CHANNEL_ID": "@c",
+                "REPO_URL": "https://github.com/a/b",
+                "REPO_BRANCH": "main",
+                "_log": "2026-11-01T06:30:00Z\t10\n2026-11-02T06:30:00Z\t12\n",
+            }
+        )
+        rich = [p for m, p in payloads if m == "sendRichMessage"]
+        self.assertIn("ещё 2 человек", rich[0]["rich_message"]["markdown"])
+
     def publish(self, cfg):
+        log = cfg.pop("_log", None)
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "day.md").write_text("Привет", encoding="utf-8")
+            if log is not None:
+                log_path = root / publisher.SUBSCRIBERS_LOG
+                log_path.parent.mkdir(parents=True)
+                log_path.write_text(log, encoding="utf-8")
             payloads = []
             with mock.patch.object(
                 publisher, "_post", side_effect=self.capture_into(payloads)
